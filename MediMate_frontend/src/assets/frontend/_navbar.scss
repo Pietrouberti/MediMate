@@ -1,0 +1,19 @@
+.navbar {
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    flex-wrap: wrap;
+    gap: 20px;
+
+    &__cta {
+        display: flex;
+        gap: 10px;
+    }
+    &__logo {
+        cursor: pointer;
+        user-select: none;
+    }
+}
