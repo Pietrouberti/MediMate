@@ -1,0 +1,131 @@
+.office {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 32px;
+    justify-content: space-between;
+    align-items: flex-start;
+    border: 2px solid $primary-color;
+    box-shadow: 0px 3px 30px 2px $primary-color;
+    border-radius: 10px;
+    * {
+        margin: 0;
+    }
+    &__col {
+        width: 50%;
+        display: flex;
+        max-width: 50%;
+        padding-top: 20px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+    &__col:first-child {
+        border-right: 1px solid $primary-color;
+    }
+    &__title-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    &__input-item {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        margin-bottom: 20px;
+        gap: 5px;
+        padding: 10px;
+        position: relative;
+    }
+    &__input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid $primary-color;
+        border-radius: 5px;
+    }
+    &__dropdown {
+        width: calc(100% - 20px);
+        border: 1px solid ;
+        position: absolute;
+        padding: 10px 5px;
+        list-style-type: none;
+        top: calc(100% - 10px);
+        left: 10px;
+        max-height: 150px;
+        overflow-y: auto;
+        z-index: 1000;
+        color: black;
+        background-color: white;
+        li {
+            text-decoration: none;
+            padding: 8px;
+            color: black;
+            cursor: pointer;
+        }
+    }
+    &__patient-info {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        margin: 0;
+        justify-content: flex-start;
+        gap: 20px;
+        padding: 10px;
+        width: 100%;
+    }
+    &__grid-input-item {
+        margin: 0;
+        gap: 2px;
+        flex-wrap: wrap;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        width: 100%;
+        min-width: calc(33% - 20px);
+        flex: 1 1 calc(33% - 20px);
+        @media (max-width: 1100px) {
+            min-width: calc(50% - 20px);
+            flex: 1 1 calc(50% - 20px);
+        }
+        @media (max-width: 768px) {
+            min-width: 100%;
+            flex: 1 1 100%;
+        }
+        &:nth-child(odd):only-child {
+            flex: 1 1 100%;
+        }
+    }
+    &__grid-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid $primary-color;
+        border-radius: 5px;
+    }
+    &__appointment-notes {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        width: 100%;
+
+    }
+    &__notes-area {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid $primary-color;
+        border-radius: 5px;
+        resize: vertical;
+        height: 100px;
+    }
+    &__cta {
+        padding: 20px 10px;
+        display: flex;
+        width: 100%;
+        gap: 10px;
+        justify-content: space-between;
+    }
+}
