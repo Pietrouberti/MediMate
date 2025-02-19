@@ -56,7 +56,7 @@
         <div class="office__patient-info">
             <div class="office__grid-input-item">
                 <label for="notes">Appointment Notes</label>
-                <textarea class="office__notes-area" name="notes" id="notes"></textarea>
+                <textarea class="office__notes-area" name="notes" id="notes" placeholder="Appointment Notes"></textarea>
             </div>
         </div>
         <div class="office__patient-info">
@@ -71,21 +71,21 @@
         </div>
         <div class="office__patient-info">
             <div class="office__grid-input-item">
-                <label for="prescription-name">Prescription name</label>
+                <label for="prescription-name">Prescription Name</label>
                 <input type="text" id="prescription-name" class="office__grid-input" placeholder="Name of prescription" />
             </div>
             <div class="office__grid-input-item">
-                <label for="prescription-dosage">Prescription dosage</label>
+                <label for="prescription-dosage">Prescription Dosage</label>
                 <input type="text" id="prescription-dosage" class="office__grid-input" placeholder="Prescription dosage" />
             </div>
         </div>
         <div class="office__patient-info">
             <div class="office__grid-input-item">
-                <label for="prescription-start">Prescription start date</label>
+                <label for="prescription-start">Prescription Start Date</label>
                 <input type="date" id="prescription-start" class="office__grid-input"/>
             </div>
             <div class="office__grid-input-item">
-                <label for="prescription-start">Prescription end date</label>
+                <label for="prescription-start">Prescription End Date</label>
                 <input type="date" id="prescription-start" class="office__grid-input"/>
             </div>
         </div>

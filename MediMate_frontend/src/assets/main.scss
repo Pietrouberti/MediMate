@@ -69,7 +69,7 @@ $secondary-color: #007bff;
     width: 100%;
     max-width: 1440px;
     position: relative;
-    margin-bottom: 20px;
+    margin-bottom: 64px;
     overflow: var(--overflow);
     height: calc(var(--height) - 84px);
 }
@@ -81,6 +81,7 @@ $secondary-color: #007bff;
     height: calc(100vh - 64px);
     position: relative;
     padding-bottom: 20px;
+    animation: Fade 1s ease-in-out forwards;
     &__puesdo1 {
         position: absolute;
         top: 10%;
@@ -89,7 +90,7 @@ $secondary-color: #007bff;
         border-radius: 20px;
         height: 55%;
         transform-origin: top;
-        animation: extendLine 2.5s ease-in-out forwards;
+        animation: extendLine 2s ease-in-out forwards;
         // transform: translate(-50%, -50%);
         text-align: center;
         // background-color: $primary-color;
@@ -121,6 +122,16 @@ $secondary-color: #007bff;
     }
 }
 
+
+@keyframes Fade {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
 @keyframes extendLine {
     0% {
         height: 0px;
@@ -140,3 +151,4 @@ $secondary-color: #007bff;
         overflow: auto !important;
     }
 }
+
