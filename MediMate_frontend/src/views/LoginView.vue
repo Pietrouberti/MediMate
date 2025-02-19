@@ -1,12 +1,18 @@
 <script setup>
     import { useRouter } from 'vue-router';
     import { ref } from 'vue';
+
+    // form object 
     const form = ref({
         email: '',
         password: ''
     })
+
+    // errors array that gets populated during fronted validation 
     const errors = ref([]);
 
+
+    // frontend simple form validation function, async added but pending for backend endpoint setup
     async function submitForm() {
         errors.value = []
         if(form.value.email === "") {

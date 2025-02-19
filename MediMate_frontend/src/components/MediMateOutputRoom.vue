@@ -27,3 +27,6 @@
         </div>
     </div>
 </template>
+<script setup>
+// pending on backend setup
+</script>

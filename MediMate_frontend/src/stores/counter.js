@@ -10,3 +10,6 @@ export const useCounterStore = defineStore('counter', () => {
 
   return { count, doubleCount, increment }
 })
+
+
+// vue boiler plate pinia store

@@ -19,8 +19,11 @@
 <script setup>
 import { useRouter } from 'vue-router';
 
+// initialise vue router
 const router = useRouter();
 
+
+// redirect helper function 
 const redirect = (path) => {
     router.push(path);
 }

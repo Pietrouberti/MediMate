@@ -97,8 +97,11 @@
     </div>
 </template>
 <script setup>
+// vue imports
 import { ref, computed } from 'vue';
 
+
+// dummy patients object just to test proxy varible functionality
 const patients = ref([
     {
         firstName: 'John',
@@ -402,6 +405,8 @@ const patients = ref([
     }
 ]);
 
+
+// selected patient object
 const selectedPatient = ref({
     firstName: null,
     lastName: null,
@@ -412,9 +417,15 @@ const selectedPatient = ref({
     address: null,
 });
 
+
+// search patient v-model proxy varible
 const searchQuery = ref('');
+
+// boolean to show/hide dropdown
 const showDropdown = ref(false);
 
+
+// filter patient list based on search query
 const filteredPatients = computed(() => {
     console.log(searchQuery.value);
     return patients.value.filter(patient => 
@@ -423,6 +434,8 @@ const filteredPatients = computed(() => {
     );
 });
 
+
+// select patient from dropdown
 const selectPatient = (patient) => {
     searchQuery.value = patient.firstName + ' ' + patient.lastName;
     selectedPatient.value = patient;
@@ -430,6 +443,7 @@ const selectPatient = (patient) => {
     showDropdown.value = false;
 };
 
+// hide dropdown after 200ms for smoother transition and silky UX
 const hideDropdown = () => {
     setTimeout(() => {
         showDropdown.value = false;

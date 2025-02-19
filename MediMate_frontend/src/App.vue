@@ -10,9 +10,9 @@ import { useRoute } from 'vue-router';
 const route = useRoute();
 const overflow = ref(null);
 const height = ref(null)
-watch(
-  () => route.path,
-  (newPath) => {
+
+// vue watcher function to alter the overflow property of the body tag, depending on url
+watch(() => route.path, (newPath) => {
     if (newPath === '/doctors-office') {
       document.body.style.overflow = 'auto'
       height.value = 'auto'
@@ -27,8 +27,10 @@ watch(
 </script>
 
 <template>
+  <!-- navigation bar component -->
   <NavigationBar />
   <div class="main" :style="`--overflow: ${overflow}; --height: ${height}`">
+    <!-- where page contents is rendered after a url change -->
     <RouterView />
   </div> 
 </template>
