@@ -1,5 +1,13 @@
 <template>
     <div class="office">
+        <!--Line Puesdo element-->
+        <div class="office__puesdo1"></div>
+        <!--Glowing orbs puesdo element -->
+        <div class="office__puesdo2"></div>
+        <div class="office__puesdo3"></div>
+        <div class="office__puesdo4"></div>
+        <div class="office__puesdo5"></div>
+
         <div class="office__col">
             <!-- Doctors Appointment Panel Component -->
            <DoctorAppointment />
@@ -33,6 +41,8 @@ onMounted(() => {
     }
 });
 
+
+window.scrollTo(0, 64);
 // helper fuction to change medichat form elements to match the theme
 const changeElementColours = (backgroundColour, colour, transition) => {
     const gridinputs = document.querySelectorAll('.office__grid-input');

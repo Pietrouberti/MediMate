@@ -90,9 +90,9 @@
             </div>
         </div>
         <div class="office__cta">
-            <button class="button button--primary">Generate Current Medical Record</button>
-            <button class="button button--secondary">Check for prescription clash</button>
-            <button class="button button--primary">Update Medical Record</button>
+            <button class="button button--form">Generate Medical Record</button>
+            <button class="button button--form">Check for prescription clash</button>
+            <button class="button button--form">Update Medical Record</button>
         </div>
     </div>
 </template>

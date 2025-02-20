@@ -6,6 +6,8 @@ import { useRouter } from 'vue-router';
 // proxy varible to hold users theme preference in browser
 const theme = ref(null);
 
+const darkMode = ref(false);
+
 // initialise vue router
 const router = useRouter();
 
@@ -55,6 +57,7 @@ const changeElementColours = (backgroundColour, colour, transition) => {
 
 // toggle between light and dark mode
 const toggleLightDarkMode = () => {
+    darkMode.value = !darkMode.value;
     if (theme.value === 'Dark') {
         theme.value = 'Light';
         userPreferenceStore.setThemePreference(theme.value);
@@ -82,8 +85,8 @@ const redirect = (path) => {
             <h1 class="heading heading__h1" @click="redirect('/')">MediMate</h1>
         </div>
         <div class="navbar__cta">
-            <button class="button button--secondary" @click="toggleLightDarkMode">Mode: {{theme}}</button>
-            <button class="button button--primary" @click="redirect('/login')">Login</button>
+            <button :class="darkMode ? 'button button--secondary' : 'button button--primary'" @click="toggleLightDarkMode">{{theme}} Mode</button>
+            <button :class="darkMode ? 'button button--primary' : 'button button--secondary'" @click="redirect('/login')">Login</button>
         </div>
     </div>
 </template>
