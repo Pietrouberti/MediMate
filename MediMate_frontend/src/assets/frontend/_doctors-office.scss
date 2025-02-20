@@ -43,10 +43,10 @@ $secondary-color: #007bff;
     }
     &__puesdo3 {
         position: absolute;
-        top: -10px;
-        left: calc(50% - 10px);
-        width: 30px;
-        height: 30px;
+        top: -5px;
+        left: calc(50% - 2.5px);
+        width: 15px;
+        height: 15px;
         border-radius: 999px;
         background-color: $secondary-color;
         z-index: 2;
@@ -55,9 +55,9 @@ $secondary-color: #007bff;
     &__puesdo4 {
         position: absolute;
         top: 50%;
-        left: calc(50% - 10px);
-        width: 30px;
-        height: 30px;
+        left: calc(50% - 2.5px);
+        width: 15px;
+        height: 15px;
         border-radius: 999px;
         background-color: $secondary-color;
         box-shadow: 0px 3px 30px 2px $primary-color;
@@ -65,10 +65,10 @@ $secondary-color: #007bff;
     }
     &__puesdo5 {
         position: absolute;
-        top: calc(100% - 15px);
-        left: calc(50% - 10px);
-        width: 30px;
-        height: 30px;
+        top: calc(100% - 5px);
+        left: calc(50% - 2.5px);
+        width: 15px;
+        height: 15px;
         border-radius: 999px;
         background-color: $secondary-color;
         box-shadow: 0px 3px 30px 2px $primary-color;
@@ -165,6 +165,9 @@ $secondary-color: #007bff;
         &:nth-child(odd):only-child {
             flex: 1 1 100%;
         }
+        label {
+            margin-left: 2px ;
+        }
     }
     &__grid-input {
         width: 100%;
@@ -172,6 +175,7 @@ $secondary-color: #007bff;
         border: 1px solid $primary-color;
         background-color: #007bff50;
         border-radius: 5px;
+
     }
     &__appointment-notes {
         display: flex;
@@ -179,6 +183,9 @@ $secondary-color: #007bff;
         align-items: center;
         justify-content: flex-start;
         width: 100%;
+        label {
+            margin-left: 2px ;
+        }
     }
     &__notes-area {
         width: 100%;
@@ -198,6 +205,9 @@ $secondary-color: #007bff;
     &__output-container {
         width: 100%;
         padding: 10px;
+        p {
+            margin-left: 2px ;
+        }
     }
     &__output-inner-container {
         border: 1px solid $primary-color;

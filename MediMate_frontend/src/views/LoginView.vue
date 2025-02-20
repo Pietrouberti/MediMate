@@ -1,6 +1,9 @@
 <script setup>
+    import { useUserStore } from '@/stores/user';
     import { useRouter } from 'vue-router';
-    import { ref } from 'vue';
+    import { ref, onMounted } from 'vue';
+    import axios from 'axios';
+
 
     // form object 
     const form = ref({
@@ -8,12 +11,24 @@
         password: ''
     })
 
+    // initialise userStore
+    const userStore = useUserStore();
+
     // errors array that gets populated during fronted validation 
     const errors = ref([]);
+    const router = useRouter();
 
+    onMounted(() => {
+        // don't let authenticated users access the login page
+        if(userStore.user.isAuthenticated) {
+            router.push({path: '/'})
+        }
+
+    });
 
     // frontend simple form validation function, async added but pending for backend endpoint setup
     async function submitForm() {
+        debugger;
         errors.value = []
         if(form.value.email === "") {
             errors.value.push('Missing email')
@@ -23,9 +38,19 @@
         }
 
         if(errors.value.length === 0) {
-            //axios request
+            await axios.post('api/doctor/login/', form.value).then((response) => {
+                userStore.setToken(response.data)
+                axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`
+                getUserDetails()
+            })
             console.log("Submitted Form", form.value)
         }
+    }
+    async function getUserDetails() {
+        await axios.get('api/doctor/get_user/').then((response) => {
+            userStore.setUserInfo(response.data)
+            router.push({path: '/'})
+        })
     }
 
 </script>

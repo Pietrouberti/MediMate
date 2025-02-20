@@ -5,7 +5,7 @@
     align-items: flex-start;
     justify-content: flex-start;
     position: relative;
-
+    user-select: none;
     &__content {
         position: absolute;
         top: 12%;

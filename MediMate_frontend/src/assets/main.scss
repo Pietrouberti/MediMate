@@ -35,6 +35,15 @@ body {
             background-color: darken($secondary-color, 10%);
         }
     }
+    &--darkMode {
+        border: 1px solid $primary-color;
+        background-color: black;
+        color: $primary-color;
+        &:hover {
+            color: white;
+            background-color: darken($secondary-color, 10%);
+        }
+    }
     &--form {
         padding: 15px 20px;
         border: 1px solid darken($primary-color, 10%);

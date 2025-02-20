@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useUserPreferenceStore } from '@/stores/user-preferences';
+import { useUserStore } from '@/stores/user';
 import { useRouter } from 'vue-router';
 
 // proxy varible to hold users theme preference in browser
@@ -11,18 +12,22 @@ const darkMode = ref(false);
 // initialise vue router
 const router = useRouter();
 
-//use user preference store
+//initialise user preference store
 const userPreferenceStore = useUserPreferenceStore();
+
+// initialise user store
+const userStore = useUserStore();
 
 // on page load check what theme is set and change the colours accordingly
 onMounted(() => {
     userPreferenceStore.initStore();
     theme.value = userPreferenceStore.theme;
     if (userPreferenceStore.theme == 'Dark') {
-
+        darkMode.value = true;
         document.body.style.backgroundColor = 'black';
         document.body.style.color = 'white';
     } else {
+        darkMode.value = false;
         document.body.style.backgroundColor = 'white';
         document.body.style.color = 'black';
     }
@@ -73,6 +78,11 @@ const toggleLightDarkMode = () => {
     }
 }
 
+const logout = () => {
+    userStore.removeToken();
+    router.push({ path: '/login' });
+}
+
 // redirect helper function
 const redirect = (path) => {
     router.push(path);
@@ -85,8 +95,9 @@ const redirect = (path) => {
             <h1 class="heading heading__h1" @click="redirect('/')">MediMate</h1>
         </div>
         <div class="navbar__cta">
-            <button :class="darkMode ? 'button button--secondary' : 'button button--primary'" @click="toggleLightDarkMode">{{theme}} Mode</button>
-            <button :class="darkMode ? 'button button--primary' : 'button button--secondary'" @click="redirect('/login')">Login</button>
+            <button :class="darkMode ? 'button button--darkMode' : 'button button--secondary'" @click="toggleLightDarkMode">{{theme}} Mode</button>
+            <button :class="darkMode ? 'button button--darkMode' : 'button button--secondary'" @click="redirect('/login')" v-if="!userStore.user.isAuthenticated">Login</button>
+            <button :class="darkMode ? 'button button--darkMode' : 'button button--secondary'" @click="logout()" v-if="userStore.user.isAuthenticated">Logout</button>
         </div>
     </div>
 </template>

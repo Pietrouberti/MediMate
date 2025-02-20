@@ -34,6 +34,17 @@ $primary-color:  rgba(0, 123, 255, 0.835);
             border: 1px solid $primary-color;
         }
     }
+    &__error-container {
+        p {
+            background-color: #ff505f;
+            border-radius: 10px;
+            color: white;
+            text-align: left;
+            padding: 10px;
+            margin-bottom: 10px;
+            animation: FadeIn 1s ease-out;
+        }
+    }
 }
 
 @keyframes FadeIn {

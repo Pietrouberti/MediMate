@@ -25,15 +25,22 @@ import MediChatOutputRoom from '@/components/MediMateOutputRoom.vue';
 import DoctorAppointment from '@/components/DoctorAppointment.vue';
 // import userpreference store for dynamic theming
 import { useUserPreferenceStore } from '@/stores/user-preferences';
+import { useUserStore } from '@/stores/user';
+import { useRouter } from 'vue-router';
 
 //vue imports 
 import { onMounted } from 'vue';
 
 //use user preference store
 const userPreferenceStore = useUserPreferenceStore();
+const userStore = useUserStore();
+const router = useRouter();
 
 // on page load check what theme is set and change the colours accordingly
 onMounted(() => {
+    if (!userStore.user.isAuthenticated) {
+        router.push({ path: '/login' });
+    }
     if (userPreferenceStore.theme == 'Dark') {
         changeElementColours('black', 'white', 'background-color 0.5s ease, color 0.5s ease');
     } else {
@@ -48,6 +55,7 @@ const changeElementColours = (backgroundColour, colour, transition) => {
     const gridinputs = document.querySelectorAll('.office__grid-input');
     const inputs = document.querySelectorAll('.office__input');
     const textarea = document.querySelector('.office__notes-area');
+    const output = document.querySelectorAll('.office__output-inner-container');
     if (gridinputs && inputs && textarea) {
         textarea.style.backgroundColor = backgroundColour;
         textarea.style.color = colour;
@@ -61,6 +69,9 @@ const changeElementColours = (backgroundColour, colour, transition) => {
             input.style.backgroundColor = backgroundColour;
             input.style.color = colour;
             input.style.transition = transition;
+        })
+        output.forEach((output) => {
+            output.style.color = colour
         })
     }
 }
