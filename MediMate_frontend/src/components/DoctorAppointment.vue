@@ -104,46 +104,6 @@ import { ref, computed } from 'vue';
 // dummy patients object just to test proxy varible functionality
 const patients = ref([
     {
-        firstName: 'John',
-        lastName: 'Doe',
-        id: '123456',
-        age: 45,
-        gender: 'Male',
-        ethnicity: 'Caucasian',
-        NHSID: 'NHS123456',
-        address: '123 Main St, Anytown, AT 12345'
-    },
-    {
-        firstName: 'Jane',
-        lastName: 'Doe',
-        id: '654321',
-        age: 38,
-        gender: 'Female',
-        ethnicity: 'Caucasian',
-        NHSID: 'NHS654321',
-        address: '456 Elm St, Othertown, OT 65432'
-    },
-    { 
-        firstName: 'John',
-        lastName: 'Smith',
-        id: '987654',
-        age: 50,
-        gender: 'Male',
-        ethnicity: 'Caucasian',
-        NHSID: 'NHS987654',
-        address: '789 Oak St, Sometown, ST 98765'
-    },
-    {
-        firstName: 'Jane',
-        lastName: 'Smith',
-        id: '456789',
-        age: 42,
-        gender: 'Female',
-        ethnicity: 'Caucasian',
-        NHSID: 'NHS456789',
-        address: '321 Pine St, Anycity, AC 45678'
-    },
-    {
         firstName: 'Alice',
         lastName: 'Johnson',
         id: '112233',
@@ -242,6 +202,46 @@ const patients = ref([
         ethnicity: 'Asian',
         NHSID: 'NHS101112',
         address: '456 Sequoia St, Metropolis, MP 10111'
+    },
+    {
+        firstName: 'Jane',
+        lastName: 'Doe',
+        id: '654321',
+        age: 38,
+        gender: 'Female',
+        ethnicity: 'Caucasian',
+        NHSID: 'NHS654321',
+        address: '456 Elm St, Othertown, OT 65432'
+    },
+    {
+        firstName: 'Jane',
+        lastName: 'Smith',
+        id: '456789',
+        age: 42,
+        gender: 'Female',
+        ethnicity: 'Caucasian',
+        NHSID: 'NHS456789',
+        address: '321 Pine St, Anycity, AC 45678'
+    },
+    {
+        firstName: 'John',
+        lastName: 'Doe',
+        id: '123456',
+        age: 45,
+        gender: 'Male',
+        ethnicity: 'Caucasian',
+        NHSID: 'NHS123456',
+        address: '123 Main St, Anytown, AT 12345'
+    },
+    {
+        firstName: 'John',
+        lastName: 'Smith',
+        id: '987654',
+        age: 50,
+        gender: 'Male',
+        ethnicity: 'Caucasian',
+        NHSID: 'NHS987654',
+        address: '789 Oak St, Sometown, ST 98765'
     },
     {
         firstName: 'Karen',
@@ -428,10 +428,19 @@ const showDropdown = ref(false);
 // filter patient list based on search query
 const filteredPatients = computed(() => {
     console.log(searchQuery.value);
-    return patients.value.filter(patient => 
-        patient.firstName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        patient.lastName.toLowerCase().includes(searchQuery.value.toLowerCase())
-    );
+    return patients.value
+        .filter(patient => 
+            patient.firstName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+            patient.lastName.toLowerCase().includes(searchQuery.value.toLowerCase())
+        )
+        .sort((a, b) => {
+            const query = searchQuery.value.toLowerCase();
+            const aFirstNameMatch = a.firstName.toLowerCase().startsWith(query);
+            const bFirstNameMatch = b.firstName.toLowerCase().startsWith(query);
+            if (aFirstNameMatch && !bFirstNameMatch) return -1;
+            if (!aFirstNameMatch && bFirstNameMatch) return 1;
+            return a.firstName.localeCompare(b.firstName);
+        });
 });
 
 
