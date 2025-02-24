@@ -9,11 +9,10 @@ class Patients(models.Model):
     last_name = models.CharField(max_length=255, blank=False, null=False)
     age = models.IntegerField()
     date_of_birth = models.DateField(blank=False, null=False)
-    date_of_death = models.DateField(blank=True, null=True)
     gender = models.CharField(max_length=255)
     ethnicity = models.CharField(max_length=255)
     address = models.TextField(max_length=500, blank=False, null=False)
-    
+     
 
 # class PatientAppointments(models.Model):
 #     id = models.UUIDField(primary_key=True, editable=False)

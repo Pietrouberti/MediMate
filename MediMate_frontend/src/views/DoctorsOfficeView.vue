@@ -21,6 +21,7 @@
 
 <script setup>
 // import view components
+import axios from 'axios';
 import MediChatOutputRoom from '@/components/MediMateOutputRoom.vue';
 import DoctorAppointment from '@/components/DoctorAppointment.vue';
 // import userpreference store for dynamic theming
@@ -29,15 +30,16 @@ import { useUserStore } from '@/stores/user';
 import { useRouter } from 'vue-router';
 
 //vue imports 
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 
 //use user preference store
 const userPreferenceStore = useUserPreferenceStore();
+const patientList = ref([])
 const userStore = useUserStore();
 const router = useRouter();
-
+window.scrollTo(0, 64);
 // on page load check what theme is set and change the colours accordingly
-onMounted(() => {
+onMounted(async() => {
     if (!userStore.user.isAuthenticated) {
         router.push({ path: '/login' });
     }
@@ -49,7 +51,7 @@ onMounted(() => {
 });
 
 
-window.scrollTo(0, 64);
+
 // helper fuction to change medichat form elements to match the theme
 const changeElementColours = (backgroundColour, colour, transition) => {
     const gridinputs = document.querySelectorAll('.office__grid-input');

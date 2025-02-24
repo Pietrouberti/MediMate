@@ -15,7 +15,7 @@ def get_user(request):
     try:
         user = UserSerializer(request.user)
         # file_path = "A:\Dissertation\MediMate\MediMate\Datasets\patients.csv"
-        # load_patients_into_db(file_path)
+        load_patients_into_db('A:\Dissertation\MediMate\MediMate\Datasets\patients.csv')
         return JsonResponse({
             'user': user.data,
             'success': True
