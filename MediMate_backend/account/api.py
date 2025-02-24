@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .serializers import  UserSerializer
-from dataset_uploader.main import load_patients_into_db
+# from dataset_uploader.patient_uploader import load_patients_into_db
 
 
 '''Endpoint to get the details of the currently logged in user'''
@@ -14,8 +14,8 @@ from dataset_uploader.main import load_patients_into_db
 def get_user(request):
     try:
         user = UserSerializer(request.user)
-        # file_path = "A:\Dissertation\MediMate\MediMate\Datasets\patients.csv"
-        load_patients_into_db('A:\Dissertation\MediMate\MediMate\Datasets\patients.csv')
+        # # file_path = "A:\Dissertation\MediMate\MediMate\Datasets\patients.csv"
+        # load_patients_into_db('A:\Dissertation\MediMate\MediMate\Datasets\patients.csv')
         return JsonResponse({
             'user': user.data,
             'success': True
