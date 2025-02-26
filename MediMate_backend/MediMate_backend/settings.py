@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import chromadb
+from sentence_transformers import SentenceTransformer
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -84,6 +86,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'account',
     'patients',
+    'MediMateLLM',
 ]
 
 MIDDLEWARE = [
@@ -172,3 +175,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Vector DB definitions and collections
