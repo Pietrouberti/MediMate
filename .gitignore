@@ -6,6 +6,8 @@ migrations/
 # C extensions
 *.so
 
+API_KEYS.py
+
 # Distribution / packaging
 .Python
 build/

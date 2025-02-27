@@ -15,7 +15,7 @@
           </div>
           <!-- <img src="/public/static/vectors.png" alt="" class="hero-banner__vector"> -->
         </div>
-        <img src="/public/static/hero-banner-image.png" class="hero-banner__image">
+        <img src="/static/hero-banner-image.png" class="hero-banner__image">
       </div>
 </template>
 <script setup>

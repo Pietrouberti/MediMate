@@ -15,6 +15,7 @@ from datetime import timedelta
 import chromadb
 from sentence_transformers import SentenceTransformer
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -178,3 +179,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # Vector DB definitions and collections
+chroma_client = chromadb.PersistentClient(path='A:\Dissertation\MediMate\chroma_db')
+allergy_collection = chroma_client.get_or_create_collection(name='allergy_collection')
+condition_collection = chroma_client.get_or_create_collection(name='condition_collections')
+encounter_collection = chroma_client.get_or_create_collection(name='encounter_collection')
+medication_collection = chroma_client.get_or_create_collection(name='medication_collection')
+model = SentenceTransformer('all-MiniLM-L6-v2')

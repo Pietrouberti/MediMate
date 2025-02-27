@@ -90,7 +90,7 @@
             </div>
         </div>
         <div class="office__cta">
-            <button class="button button--form">Generate Medical Record</button>
+            <button class="button button--form" @click="getSummary()">Generate Medical Record</button>
             <button class="button button--form">Check for prescription clash</button>
             <button class="button button--form">Update Medical Record</button>
         </div>
@@ -126,17 +126,14 @@ const getPatientList = async() => {
     })
 }
 
-
-
-
 // selected patient object
 const selectedPatient = ref({
+    id: null,
     first_name: null,
     last_name: null,
     age: null,
     gender: null,
     ethnicity: null,
-    NHSID: null,
     address: null,
 });
 
@@ -183,4 +180,20 @@ const hideDropdown = () => {
         showDropdown.value = false;
     }, 200);
 };
+
+
+const getSummary = async() => {
+    await axios.get('api/llm_generation/get_summary/' + selectedPatient.value.id,{
+        headers: {
+            'Authorization': `Bearer ${userStore.user.accessToken}`
+        }
+    }).then((response) => {
+        console.log(response)
+    }).catch((error) => {
+        console.error(error)
+    })
+}
+
+
+
 </script>
