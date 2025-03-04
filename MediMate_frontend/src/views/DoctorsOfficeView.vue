@@ -8,13 +8,27 @@
         <div class="office__puesdo4"></div>
         <div class="office__puesdo5"></div>
 
-        <div class="office__col">
+        <div class="office__col"> 
             <!-- Doctors Appointment Panel Component -->
-           <DoctorAppointment />
+           <DoctorAppointment 
+           @encounterSummary="handleEncounterSummary" 
+           @encounterSummaryLoader="handleEncounterLoader" 
+           @medicationSummary="handleMedicationSummary" 
+           @medicationSummaryLoader="handleMedicationLoader"
+           @allergySummary="handleAllergySummary"
+           @allergySummaryLoader="handleAllergyLoader"
+            />
         </div>
         <div class="office__col">
             <!-- MediChat Output Panel Component -->
-            <MediChatOutputRoom />
+            <MediChatOutputRoom 
+            :patientEncounterSummary="patientEncounterSummary" 
+            :encounterLoader="encounterLoader"
+            :patientMedicationSummary="patientMedicationSummary"
+            :medicationLoader="medicationLoader"
+            :patientAllergySummary="patientAllergySummary"
+            :allergyLoader="allergyLoader"
+            />
         </div>
     </div> 
 </template>
@@ -37,6 +51,15 @@ const userPreferenceStore = useUserPreferenceStore();
 const patientList = ref([])
 const userStore = useUserStore();
 const router = useRouter();
+
+const patientEncounterSummary = ref({});
+const patientMedicationSummary = ref({});
+const patientAllergySummary = ref({})
+
+const medicationLoader = ref(false)
+const encounterLoader = ref(false)
+const allergyLoader = ref(false)
+
 window.scrollTo(0, 64);
 // on page load check what theme is set and change the colours accordingly
 onMounted(async() => {
@@ -50,7 +73,30 @@ onMounted(async() => {
     }
 });
 
+// handle the patient summary output
+const handleEncounterSummary = (data) => {
+    patientEncounterSummary.value = data;
+}
 
+const handleEncounterLoader = (bool) => {
+    encounterLoader.value = bool;
+}
+
+const handleMedicationSummary = (data) => {
+    patientMedicationSummary.value = data
+}
+
+const handleMedicationLoader = (bool) => {
+    medicationLoader.value = bool
+}
+
+const handleAllergySummary = (data) => {
+    patientAllergySummary.value = data
+}
+
+const handleAllergyLoader = (bool) => {
+    allergyLoader.value = bool
+}
 
 // helper fuction to change medichat form elements to match the theme
 const changeElementColours = (backgroundColour, colour, transition) => {

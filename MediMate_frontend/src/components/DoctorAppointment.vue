@@ -48,6 +48,11 @@
             <label for="address">Address</label>
             <input type="text" id="address" class="office__grid-input" v-model="selectedPatient.address" placeholder="Address" />
         </div>
+        <div class="office__cta1">
+            <button class="button button--form" @click="getEncounterSummary()">Summaries past appointments</button>
+            <button class="button button--form" @click="getMedicationSummary()">Summaries current active medication</button>
+            <button class="button button--form" @click="getAllergySummary()">Summaries allergies</button>
+        </div>
     </div>
     <div class="office__title-container">
         <h4 class="heading heading__h4">Appointment Notes</h4>
@@ -90,9 +95,9 @@
             </div>
         </div>
         <div class="office__cta">
-            <button class="button button--form" @click="getSummary()">Generate Medical Record</button>
-            <button class="button button--form">Check for prescription clash</button>
-            <button class="button button--form">Update Medical Record</button>
+            <button class="button button--form">Generate Medical Record</button>
+            <button class="button button--form">Check for Prescription Clashes</button>
+            <button class="button button--form">Check for Allergy adverse drug effects</button>
         </div>
     </div>
 </template>
@@ -102,10 +107,22 @@ import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { useUserStore } from '@/stores/user';
 
+const emit = defineEmits([
+    'encounterSummary', 
+    'encounterSummaryLoader', 
+    'medicationSummary', 
+    'medicationSummaryLoader',
+    'allergySummary', 
+    'allergySummaryLoader'
+])
 
 const userStore = useUserStore();
 
 const patients = ref([])
+
+const encountersRecordSummary = ref('')
+const medicationRecordSummary = ref('')
+const allergyRecordSummary = ref('')
 
 onMounted(async() => {
     await getPatientList()
@@ -181,16 +198,71 @@ const hideDropdown = () => {
     }, 200);
 };
 
-
-const getSummary = async() => {
-    await axios.get('api/llm_generation/get_summary/' + selectedPatient.value.id,{
+// get a summary of patient medication
+const getMedicationSummary = async() => {
+    // start the loading animation
+    emit('medicationSummaryLoader', true)
+    await axios.get('api/llm_generation/get_summary/medication/' + selectedPatient.value.id, {
         headers: {
             'Authorization': `Bearer ${userStore.user.accessToken}`
         }
     }).then((response) => {
-        console.log(response)
+        if (response.data.success) {
+            console.log(response.data.summary)
+            medicationRecordSummary.value = JSON.parse(response.data.summary)
+            // emit value of the medication summary to the parent component
+            emit('medicationSummary', medicationRecordSummary.value)
+            // notify parent component to stop loading animation
+            emit('medicationSummaryLoader', false)
+        }
     }).catch((error) => {
         console.error(error)
+        emit('medicationSummaryLoader', false)
+    })
+}
+
+const getAllergySummary = async() => {
+    // start loading animation to provide user feedback
+    emit('allergySummaryLoader', true)
+    await axios.get('api/llm_generation/get_summary/allergy/' + selectedPatient.value.id, {
+        headers: {
+            'Authorization': `Bearer ${userStore.user.accessToken}` 
+        }
+    }).then((response) => {
+        if(response.data.success) {
+            allergyRecordSummary.value = JSON.parse(response.data.summary);
+            console.log(allergyRecordSummary.value)
+            // emit summary to parent component
+            emit('allergySummary', allergyRecordSummary.value);
+            // stop the loading animation
+            emit('allergySummaryLoader', false);
+        }
+    }).catch((error) => {
+        console.error(error)
+        emit('allergySummaryLoader', false);
+    })
+}
+
+
+// get a summary of patient previous encounters
+const getEncounterSummary = async() => {
+    // start the loading animation
+    emit('encounterSummaryLoader', true)
+    await axios.get('api/llm_generation/get_summary/encounters/' + selectedPatient.value.id,{
+        headers: {
+            'Authorization': `Bearer ${userStore.user.accessToken}`
+        }
+    }).then((response) => {
+        if(response.data.success) {
+            encountersRecordSummary.value = JSON.parse(response.data.summary);
+            // emit value to parent component
+            emit('encounterSummary', encountersRecordSummary.value)
+            // stop loading animation
+            emit('encounterSummaryLoader', false)
+        }
+    }).catch((error) => {
+        console.error(error)
+        emit('encounterSummaryLoader', false)
     })
 }
 

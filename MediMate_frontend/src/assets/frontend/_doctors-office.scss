@@ -199,6 +199,14 @@ $secondary-color: #007bff;
         padding: 20px 10px 40px 30px;
         display: flex;
         width: 100%;
+        width: 100%;
+        gap: 10px;
+        justify-content: space-between;
+    }
+    &__cta1{
+        display: flex;
+        width: 100%;
+        width: 100%;
         gap: 10px;
         justify-content: space-between;
     }
@@ -212,12 +220,45 @@ $secondary-color: #007bff;
     &__output-inner-container {
         border: 1px solid $primary-color;
         width: 100%;
-        min-height: 175px;
+        min-height: 150px;
+        max-height: 150px;
+        overflow-y: auto;
         border-radius: 10px;
         padding: 10px;
         background-color: transparent;
         color: black;
         align-self: stretch;
+        position: relative;
+        &--export {
+            min-height: 148px;
+            max-height: 148px;
+        }
+    }
+    
+    &__loader {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        border-radius: 999px;
+        background-color: $secondary-color;
+        z-index: 2;
+        box-shadow: 0px 3px 30px 2px $primary-color;
+        animation: loader 2s infinite;
+    }
+}
+
+@keyframes loader {
+    0% {
+        box-shadow: 0px 0px 0px 0px $primary-color;
+    }
+    50% {
+        box-shadow: 0px 3px 30px 2px $primary-color;
+    }
+    100% {
+        box-shadow: 0px 0px 0px 0px $primary-color;
     }
 }
 

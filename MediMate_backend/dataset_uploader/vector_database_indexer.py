@@ -70,30 +70,42 @@ def index_medications_data(df):
             metadatas=[row.to_dict()]
         )
 
-def rag_entry_point(patient_id, query_text):
+def rag_entry_point(patient_id, query_text, params):
     patient_electronic_health_record = {}
-    # get patient specific information from datasets
-    allergy_results = patient_record_collector(patient_id, allergy_collection)
-    conditions_results = patient_record_collector(patient_id, condition_collection)
-    medications_results = patient_record_collector(patient_id, medication_collection)
-    encounters_results = patient_record_collector(patient_id, encounter_collection)
-    
-    print("Allergy", allergy_results)
-    
-    # columns we want to construct patient health record with    
     allergy_important_keys = ['CATEGORY', 'CODE', 'SYSTEM', 'DESCRIPTION', 'DESCRIPTION1', 'START', 'STOP' 'SEVERITY1', 'REACTION1', 'SEVERITY2', 'REACTION2']
     conditions_important_keys = ['START', 'STOP', 'DESCRIPTION', 'SYSTEM', 'CODE']
     medications_important_keys = ['START', 'STOP', 'CODE', 'DESCRIPTION', 'REASONCODE', 'REASONDESCRIPTION', 'DISPENSES']
     encounters_important_keys = ['START', 'STOP', 'CODE', 'DESCRIPTION', 'REASONCODE', 'REASONDESCRIPTION']
-    
-    print("Allergy_formated: ",  format_dataset_record(allergy_results, allergy_important_keys))
-    
-    patient_electronic_health_record['allergy'] = format_dataset_record(allergy_results, allergy_important_keys)
-    patient_electronic_health_record['conditions'] = format_dataset_record(conditions_results, conditions_important_keys)
-    patient_electronic_health_record['medications'] = format_dataset_record(medications_results, medications_important_keys)
-    patient_electronic_health_record['appointments'] = format_dataset_record(encounters_results, encounters_important_keys)
-    
-    return patient_electronic_health_record
+    # get patient specific information from datasets
+    if params == 'allergy':
+        allergy_results = patient_record_collector(patient_id, allergy_collection)
+        patient_electronic_health_record['allergy'] = format_dataset_record(allergy_results, allergy_important_keys)
+        return patient_electronic_health_record
+    if params == 'conditions':
+        conditions_results = patient_record_collector(patient_id, condition_collection)
+        patient_electronic_health_record['conditions'] = format_dataset_record(conditions_results, conditions_important_keys)
+        return patient_electronic_health_record
+    if params == 'medications': 
+        medications_results = patient_record_collector(patient_id, medication_collection)
+        patient_electronic_health_record['medications'] = format_dataset_record(medications_results, medications_important_keys)
+        return patient_electronic_health_record
+    if params == 'encounters':
+        encounters_results = patient_record_collector(patient_id, encounter_collection)
+        patient_electronic_health_record['appointments'] = format_dataset_record(encounters_results, encounters_important_keys)
+        return patient_electronic_health_record
+    else: 
+        
+        allergy_results = patient_record_collector(patient_id, allergy_collection)
+        conditions_results = patient_record_collector(patient_id, condition_collection)
+        medications_results = patient_record_collector(patient_id, medication_collection)
+        encounters_results = patient_record_collector(patient_id, encounter_collection)
+               
+        patient_electronic_health_record['allergy'] = format_dataset_record(allergy_results, allergy_important_keys)
+        patient_electronic_health_record['conditions'] = format_dataset_record(conditions_results, conditions_important_keys)
+        patient_electronic_health_record['medications'] = format_dataset_record(medications_results, medications_important_keys)
+        patient_electronic_health_record['appointments'] = format_dataset_record(encounters_results, encounters_important_keys)
+        
+        return patient_electronic_health_record
     
 
     
@@ -119,4 +131,3 @@ def similar_record_context_search(query_text, collection_obj, top_k=2):
     )
     return results
     
-
