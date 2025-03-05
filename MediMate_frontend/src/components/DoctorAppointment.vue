@@ -17,41 +17,41 @@
     <div class="office__patient-info">
         <div class="office__grid-input-item">
             <label for="first_name">First Name</label>
-            <input type="text" id="first_name" class="office__grid-input" v-model="selectedPatient.first_name" placeholder="First Name" />
+            <input type="text" id="first_name" class="office__grid-input" disabled v-model="selectedPatient.first_name" placeholder="First Name" />
         </div>
         <div class="office__grid-input-item">
             <label for="last_name">Last Name</label>
-            <input type="text" id="last_name" class="office__grid-input" v-model="selectedPatient.last_name" placeholder="Last Name" />
+            <input type="text" id="last_name" class="office__grid-input" disabled v-model="selectedPatient.last_name" placeholder="Last Name" />
         </div>
         
         <div class="office__grid-input-item">
             <label for="age">Age</label>
-            <input type="text" id="age" class="office__grid-input" v-model="selectedPatient.age" placeholder="Age" />
+            <input type="text" id="age" class="office__grid-input" disabled v-model="selectedPatient.age" placeholder="Age" />
         </div>
         
         <div class="office__grid-input-item">
             <label for="gender">Gender</label>
-            <input type="text" id="gender" class="office__grid-input" v-model="selectedPatient.gender" placeholder="Gender" />
+            <input type="text" id="gender" class="office__grid-input" disabled v-model="selectedPatient.gender" placeholder="Gender" />
         </div>
         
         <div class="office__grid-input-item">
             <label for="ethnicity">Ethnicity</label>
-            <input type="text" id="ethnicity" class="office__grid-input" v-model="selectedPatient.ethnicity" placeholder="Ethnicity" />
+            <input type="text" id="ethnicity" class="office__grid-input" disabled v-model="selectedPatient.ethnicity" placeholder="Ethnicity" />
         </div>
         
         <div class="office__grid-input-item">
             <label for="NHSID">NHS ID</label>
-            <input type="text" id="NHSID" class="office__grid-input" v-model="selectedPatient.id" placeholder="NHS ID" />
+            <input type="text" id="NHSID" class="office__grid-input" disabled v-model="selectedPatient.id" placeholder="NHS ID" />
         </div>
         
         <div class="office__grid-input-item">
             <label for="address">Address</label>
-            <input type="text" id="address" class="office__grid-input" v-model="selectedPatient.address" placeholder="Address" />
+            <input type="text" id="address" class="office__grid-input" disabled v-model="selectedPatient.address" placeholder="Address" />
         </div>
         <div class="office__cta1">
-            <button class="button button--form" @click="getEncounterSummary()">Summaries past appointments</button>
-            <button class="button button--form" @click="getMedicationSummary()">Summaries current active medication</button>
-            <button class="button button--form" @click="getAllergySummary()">Summaries allergies</button>
+            <button class="button button--form" @click="getEncounterSummary()" :disabled="selectedPatient.id == null || fetchingInformation">Summaries past appointments</button>
+            <button class="button button--form" @click="getMedicationSummary()" :disabled="selectedPatient.id == null || fetchingInformation">Summaries current active medication</button>
+            <button class="button button--form" @click="getAllergySummary()" :disabled="selectedPatient.id == null || fetchingInformation">Summaries allergies</button>
         </div>
     </div>
     <div class="office__title-container">
@@ -110,11 +110,16 @@ import { useUserStore } from '@/stores/user';
 const emit = defineEmits([
     'encounterSummary', 
     'encounterSummaryLoader', 
+    'clearEncounterResponse',
     'medicationSummary', 
     'medicationSummaryLoader',
+    'clearMedicationResponse',
     'allergySummary', 
-    'allergySummaryLoader'
+    'allergySummaryLoader',
+    'clearAllergyResponse'
 ])
+
+const fetchingInformation = ref(false);
 
 const userStore = useUserStore();
 
@@ -200,16 +205,19 @@ const hideDropdown = () => {
 
 // get a summary of patient medication
 const getMedicationSummary = async() => {
-    // start the loading animation
+    // clear previous repsonses
+    fetchingInformation.value = true;
+    emit('clearMedicationResponse')
     emit('medicationSummaryLoader', true)
+    // start the loading animation
     await axios.get('api/llm_generation/get_summary/medication/' + selectedPatient.value.id, {
         headers: {
             'Authorization': `Bearer ${userStore.user.accessToken}`
         }
     }).then((response) => {
         if (response.data.success) {
-            console.log(response.data.summary)
-            medicationRecordSummary.value = JSON.parse(response.data.summary)
+            fetchingInformation.value = false;
+            medicationRecordSummary.value = response.data.summary
             console.log("Medication RAG Information: \n \n \n", response.data.RAG)
             // emit value of the medication summary to the parent component
             emit('medicationSummary', medicationRecordSummary.value)
@@ -223,6 +231,9 @@ const getMedicationSummary = async() => {
 }
 
 const getAllergySummary = async() => {
+    // clear previous repsonses
+    fetchingInformation.value = true;
+    emit('clearAllergyResponse')
     // start loading animation to provide user feedback
     emit('allergySummaryLoader', true)
     await axios.get('api/llm_generation/get_summary/allergy/' + selectedPatient.value.id, {
@@ -231,9 +242,8 @@ const getAllergySummary = async() => {
         }
     }).then((response) => {
         if(response.data.success) {
-            allergyRecordSummary.value = JSON.parse(response.data.summary);
-            console.log(allergyRecordSummary.value)
-            console.log("Allergy RAG Information: \n \n \n", response.data.RAG)
+            fetchingInformation.value = false;
+            allergyRecordSummary.value = response.data.summary;
             // emit summary to parent component
             emit('allergySummary', allergyRecordSummary.value);
             // stop the loading animation
@@ -248,6 +258,9 @@ const getAllergySummary = async() => {
 
 // get a summary of patient previous encounters
 const getEncounterSummary = async() => {
+    // clear previous repsonses
+    fetchingInformation.value = true;
+    emit('clearEncounterResponse')
     // start the loading animation
     emit('encounterSummaryLoader', true)
     await axios.get('api/llm_generation/get_summary/encounters/' + selectedPatient.value.id,{
@@ -256,7 +269,8 @@ const getEncounterSummary = async() => {
         }
     }).then((response) => {
         if(response.data.success) {
-            encountersRecordSummary.value = JSON.parse(response.data.summary);
+            fetchingInformation.value = false;
+            encountersRecordSummary.value = response.data.summary;
             console.log("Encounter RAG Information: \n \n \n", response.data.RAG)
             // emit value to parent component
             emit('encounterSummary', encountersRecordSummary.value)

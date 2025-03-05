@@ -59,6 +59,10 @@ body {
             color: white;
         }
     }
+    &:disabled {
+        filter: grayscale(1);
+        cursor:not-allowed;
+    }
 }
 
 .heading {

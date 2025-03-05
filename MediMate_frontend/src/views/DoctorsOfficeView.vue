@@ -17,6 +17,9 @@
            @medicationSummaryLoader="handleMedicationLoader"
            @allergySummary="handleAllergySummary"
            @allergySummaryLoader="handleAllergyLoader"
+           @clearEncounterResponse="handleEncounterClear"
+           @clearMedicationResponse="handleMedicationClear"
+           @clearAllergyResponse="handleAllergyClear"
             />
         </div>
         <div class="office__col">
@@ -96,6 +99,18 @@ const handleAllergySummary = (data) => {
 
 const handleAllergyLoader = (bool) => {
     allergyLoader.value = bool
+}
+
+const handleAllergyClear = () => {
+    patientAllergySummary.value = {}
+}
+
+const handleEncounterClear = () => {
+    patientEncounterSummary.value = {}
+}
+
+const handleMedicationClear = () => {
+    patientMedicationSummary.value = {}
 }
 
 // helper fuction to change medichat form elements to match the theme

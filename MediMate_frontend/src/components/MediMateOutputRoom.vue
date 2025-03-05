@@ -14,14 +14,11 @@
         </div>
     </div>
     <div class="office__output-container">
-        <p class="heading heading__p">Medication</p>
+        <p class="heading heading__p">Current and Past Medication</p>
         <div class="office__output-inner-container">
             <div class="office__loader" v-if="props.medicationLoader"></div>
             <p class="heading heading__p" v-if="props.patientMedicationSummary">{{props.patientMedicationSummary.summary}}</p>
-            <p class="heading heading__p" v-if="props.patientMedicationSummary" v-for="item in props.patientMedicationSummary.currentMedication" v-bind:key="item">
-                <p style="font-weight: bold;">{{ item.startDate }} - Present <span style="font-weight: normal;">{{ item.details }}</span></p> 
-            </p>
-            <p class="heading heading__p" v-if="props.patientMedicationSummary" v-for="item in props.patientMedicationSummary.oldMedication" v-bind:key="item">
+            <p class="heading heading__p" v-if="props.patientMedicationSummary" v-for="item in props.patientMedicationSummary.medications" v-bind:key="item">
                 <p style="font-weight: bold;">{{ item.startDate }} - {{ item.endDate }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
             </p>
             <p class="heading heading__p" v-if="Object.keys(props.patientMedicationSummary).length == 0 && !props.medicationLoader">Nothing see here...</p>
@@ -36,18 +33,6 @@
                 <p style="font-weight: bold;">{{item.date}} <span style="font-weight:normal">{{item.details}}</span></p>
             </p>
             <p class="heading heading__p" v-if="Object.keys(props.patientAllergySummary).length == 0 && !props.allergyLoader">Nothing see here...</p>
-        </div>
-    </div>
-    <div class="office__output-container">
-        <p class="heading heading__p">Adverse drug effect alerts</p>
-        <div class="office__output-inner-container">
-            <p class="heading heading__p">Nothing see here...</p>
-        </div>
-    </div>
-    <div class="office__output-container">
-        <p class="heading heading__p">Medical record Export and Download</p>
-        <div class="office__output-inner-container office__output-inner-container--export">
-            <p class="heading heading__p">Nothing see here...</p>
         </div>
     </div>
 </template>

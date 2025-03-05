@@ -131,3 +131,15 @@ def similar_record_context_search(query_text, collection_obj, top_k=2):
     )
     return results
     
+
+
+
+# Comment out the Medimate_backend inmports and uncomment code below. Run file to create vector database embeddings. Once created return code to previous state.
+
+# chroma_client = chromadb.PersistentClient(path='A:\Dissertation\MediMate\chroma_db')
+# allergy_collection = chroma_client.get_or_create_collection(name='allergy_collection')
+# condition_collection = chroma_client.get_or_create_collection(name='condition_collections')
+# encounter_collection = chroma_client.get_or_create_collection(name='encounter_collection')
+# medication_collection = chroma_client.get_or_create_collection(name='medication_collection')
+# model = SentenceTransformer('all-MiniLM-L6-v2')
+#load_dataset()
