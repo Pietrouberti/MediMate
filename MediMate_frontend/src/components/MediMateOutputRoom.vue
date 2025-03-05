@@ -24,7 +24,7 @@
             <p class="heading heading__p" v-if="props.patientMedicationSummary" v-for="item in props.patientMedicationSummary.oldMedication" v-bind:key="item">
                 <p style="font-weight: bold;">{{ item.startDate }} - {{ item.endDate }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
             </p>
-            <p class="heading heading__p" v-if="Object.keys(props.patientMedicationSummary).length == 0 && !props.encounterLoader">Nothing see here...</p>
+            <p class="heading heading__p" v-if="Object.keys(props.patientMedicationSummary).length == 0 && !props.medicationLoader">Nothing see here...</p>
         </div>
     </div>
     <div class="office__output-container">

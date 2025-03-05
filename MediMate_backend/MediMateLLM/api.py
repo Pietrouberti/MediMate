@@ -12,6 +12,17 @@ from dataset_uploader.vector_database_indexer import rag_entry_point
 from transformers import AutoModelForCausalLM, LlamaTokenizer
 import torch
 
+''' 
+Notes to self:
+
+Need to implement dynamic token checking for RAG and split payload
+requests in order to capture all user information. Change the JSON conversion from JS to python 
+script to construct final output in backend
+
+
+'''
+
+
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
 
 class MedicalRecordGenerator():
@@ -19,13 +30,15 @@ class MedicalRecordGenerator():
         self.model_name = "mistral"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
-    def summarise_health_record(self, text_prompt):
-        print("OOP TEST", self.model_name, self.device)
+    def summarise_health_record(self, text_prompt, name):
+        print(name," Summarisation in progress...")
+        
         payload = {
             "model": self.model_name,
             "prompt": text_prompt,
             "stream": False,
         }
+        
         
         try: 
             response = requests.post(OLLAMA_API_URL, json=payload)
@@ -43,9 +56,8 @@ def get_medication_records(request, id):
         patient_id = str(id)
         results = rag_entry_point(patient_id, '', 'medications')
         medication_information = results.get('medications', 'No Medications')
-        print(medication_information)
         constructed_prompt = f'''
-        Summarise the patient's past and current medication in an organised manner.
+        Summarise **all** the patient's past and current medication in an organised manner.
 
         Medication Information: 
         {medication_information}
@@ -68,10 +80,10 @@ def get_medication_records(request, id):
             }}
         ]
         }}
-        Ensure that the output is valid JSON.'''
+        Ensure that the output is valid JSON. if there are no medications present return an empty list and no additional text or comments'''
         generator = MedicalRecordGenerator()
-        summary = generator.summarise_health_record(constructed_prompt)
-        return JsonResponse({'success': True, 'summary': summary})
+        summary = generator.summarise_health_record(constructed_prompt, 'medications')
+        return JsonResponse({'success': True, 'summary': summary, 'RAG': medication_information})
     except Exception as e:
         return JsonResponse({'error': e, 'success': False})
 
@@ -83,13 +95,14 @@ def get_allergy_records(request, id):
         patient_id = str(id)
         results = rag_entry_point(patient_id, '', 'allergy')
         allergy_information = results.get('allergy', 'no allergies')
-        constructed_prompt = f''' Summarise the patient's allergies in an organised manner.
+        constructed_prompt = f''' Summarise **all** the patient's allergies in an organised manner.
         List the allergies in descending order (most recent last).
         
         Allergy Information:
         {allergy_information}
         
         Please provide the results in the following JSON format without any additional text:
+        
         {{
             "summary": "<Overall summary of allergies>"
             "allergy": [
@@ -99,12 +112,11 @@ def get_allergy_records(request, id):
                 }}
             ]
         }} 
-        Ensure that the output is valid JSON
+        Ensure that the output is valid JSON, if there are no allergies present return an empty list and no additional text or comments
         '''
         generator = MedicalRecordGenerator()
-        summary = generator.summarise_health_record(constructed_prompt)
-        print(summary)
-        return JsonResponse({'success': True, 'summary': summary})
+        summary = generator.summarise_health_record(constructed_prompt, 'allergies')
+        return JsonResponse({'success': True, 'summary': summary, 'RAG': allergy_information})
     except Exception as e:
         return JsonResponse({'success': False, 'error': e})
 
@@ -116,8 +128,7 @@ def get_encounter_records(request, id):
         patient_id = str(id)
         results = rag_entry_point(patient_id, '', 'encounters')
         encounter_information = results.get('appointments', 'no appointments')
-        print(encounter_information)
-        constructed_prompt = f'''Summarise the patient's past appointments and encounters in an organised manner.
+        constructed_prompt = f'''Summarise **all** the patient's past appointments and encounters in an organised manner.
         List the encounters in descending order (most recent last).
 
         Encounter Information: 
@@ -134,11 +145,11 @@ def get_encounter_records(request, id):
             // You can list as many encounters as necessary
         ]
         }}
-        Ensure that the output is valid JSON.'''
+        Ensure that the output is valid JSON. If there are no encounters present return an empty list and no additional text or comments'''
         generator = MedicalRecordGenerator()
-        summary = generator.summarise_health_record(constructed_prompt)
+        summary = generator.summarise_health_record(constructed_prompt, 'encounters')
         
-        return JsonResponse({'success': True, 'summary': summary})
+        return JsonResponse({'success': True, 'summary': summary, 'RAG': encounter_information})
     
     except Exception as e:
         return JsonResponse({'error': str(e), 'success': False})

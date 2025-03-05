@@ -210,6 +210,7 @@ const getMedicationSummary = async() => {
         if (response.data.success) {
             console.log(response.data.summary)
             medicationRecordSummary.value = JSON.parse(response.data.summary)
+            console.log("Medication RAG Information: \n \n \n", response.data.RAG)
             // emit value of the medication summary to the parent component
             emit('medicationSummary', medicationRecordSummary.value)
             // notify parent component to stop loading animation
@@ -232,6 +233,7 @@ const getAllergySummary = async() => {
         if(response.data.success) {
             allergyRecordSummary.value = JSON.parse(response.data.summary);
             console.log(allergyRecordSummary.value)
+            console.log("Allergy RAG Information: \n \n \n", response.data.RAG)
             // emit summary to parent component
             emit('allergySummary', allergyRecordSummary.value);
             // stop the loading animation
@@ -255,6 +257,7 @@ const getEncounterSummary = async() => {
     }).then((response) => {
         if(response.data.success) {
             encountersRecordSummary.value = JSON.parse(response.data.summary);
+            console.log("Encounter RAG Information: \n \n \n", response.data.RAG)
             // emit value to parent component
             emit('encounterSummary', encountersRecordSummary.value)
             // stop loading animation

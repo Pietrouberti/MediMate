@@ -28,7 +28,6 @@
 
     // frontend simple form validation function, async added but pending for backend endpoint setup
     async function submitForm() {
-        debugger;
         errors.value = []
         if(form.value.email === "") {
             errors.value.push('Missing email')
