@@ -210,3 +210,49 @@ def get_encounter_records(request, id):
     except Exception as e:
         print(e)
         return JsonResponse({'error': str(e), 'success': False})
+
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_condition_records(request, id):
+    try:    
+        constructed_prompt_list = []
+        summary_responses = []
+        patient_id = str(id)
+        results = rag_entry_point(patient_id, '', 'conditions')
+        condition_information = results.get('conditions', 'no conditions')
+        generator = MedicalRecordGenerator()
+        chunked_info = generator.split_prompt_text(condition_information)
+        
+        for i in chunked_info:
+            constructed_prompt = f'''Summarise **all** the patient's conditions in an organised manner.
+                List the conditions in descending order (most recent last).
+
+                Patient Condition Information: 
+                {i}
+
+                Please provide the result in the following JSON format without any additional text:
+                {{
+                "summary": "<Overall summary of the conditions>",
+                "conditions": [
+                    {{
+                        "startDate": "<condition Start date in YYYY/MM/DD format>",
+                        "endDate": "<condition End date in YYYY/MM/DD format>",
+                        "details": "<Detailed description of the condition>"
+                    }}
+                ]
+                }}
+                Ensure that the output is valid JSON. If there are no conditions present return an empty list and no additional text or comments'''
+            constructed_prompt_list.append(constructed_prompt)
+        
+        print("constructed Prompts: \n \n ", constructed_prompt_list)
+        for i in constructed_prompt_list:
+            print("generating response: ", i)
+            summary_responses.append(generator.summarise_health_record(i))
+        
+        summary = generator.combine_summaries_as_json(summary_responses, 'conditions', 'startDate')
+        return JsonResponse({'success': True, 'summary': summary, 'RAG': condition_information})
+    except Exception as e:
+        print(e)
+        return JsonResponse({'error': str(e), 'success': False})

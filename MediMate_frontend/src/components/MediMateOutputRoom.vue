@@ -28,9 +28,17 @@
             <div class="office__output-contents" id="allergySummary">
                 <div class="office__loader" v-if="allergyLoader"></div>
                 <p class="heading heading__p" v-if="Object.keys(summaryObject.allergySummary.data).length != 0">{{summaryObject.allergySummary.data.summary}}</p>
-                <p class="heading heading__p" v-if="Object.keys(summaryObject.allergySummary.data).length == 0 && !allergySummary">Select a patient and click `summarise allergies`.</p>
+                <p class="heading heading__p" v-if="Object.keys(summaryObject.allergySummary.data).length == 0 && !allergyLoader">Select a patient and click `summarise allergies`.</p>
                 <div v-if="Object.keys(summaryObject.allergySummary.data).length != 0" v-for="item in summaryObject.allergySummary.data.allergy" v-bind:key="item">
                     <p style="font-weight: bold;">{{ item.date }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
+                </div>
+            </div>
+            <div class="office__output-contents" id="conditionSummary">
+                <div class="office__loader" v-if="conditionLoader"></div>
+                <p class="heading heading__p" v-if="Object.keys(summaryObject.conditionSummary.data).length != 0">{{summaryObject.conditionSummary.data.summary}}</p>
+                <p class="heading heading__p" v-if="Object.keys(summaryObject.conditionSummary.data).length == 0 && !conditionLoader">Select a patient and click `summarise condition`.</p>
+                <div v-if="Object.keys(summaryObject.conditionSummary.data).length != 0" v-for="item in summaryObject.conditionSummary.data.conditions" v-bind:key="item">
+                    <p style="font-weight: bold;">{{ item.startDate }} - {{ item.endDate }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
                 </div>
             </div>
         </div>
@@ -49,6 +57,7 @@ const summaryObject = ref({
     encounterSummary: {heading: 'Appointments', data: {}},
     medicationSummary: {heading: 'Medications', data: {}},
     allergySummary: {heading: 'Allergies', data: {}},
+    conditionSummary: {heading: 'Conditions', data: {}}
 
 })
 
@@ -83,13 +92,16 @@ const props = defineProps({
     medicationLoader: Boolean,
     patientAllergySummary: Object,
     allergyLoader: Boolean,
+    patientConditionSummary: Object,
+    conditionLoader: Boolean,
 })
 
-watch(() => [props.patientEncounterSummary, props.patientMedicationSummary, props.patientAllergySummary],
-    ([newEncounterSummary, newMedicationSummary, newAllergySummary]) => {
+watch(() => [props.patientEncounterSummary, props.patientMedicationSummary, props.patientAllergySummary, props.patientConditionSummary],
+    ([newEncounterSummary, newMedicationSummary, newAllergySummary, newConditionSummary]) => {
         summaryObject.value.encounterSummary.data = newEncounterSummary
         summaryObject.value.medicationSummary.data = newMedicationSummary
         summaryObject.value.allergySummary.data = newAllergySummary
+        summaryObject.value.conditionSummary.data = newConditionSummary
         console.log(summaryObject.value)
     },
     { deep: true }

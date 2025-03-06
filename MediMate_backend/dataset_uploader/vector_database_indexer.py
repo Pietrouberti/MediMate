@@ -70,6 +70,7 @@ def index_medications_data(df):
             metadatas=[row.to_dict()]
         )
 
+# note to self: ustalise the query text parameter to permit doctor to fetch similar records
 def rag_entry_point(patient_id, query_text, params):
     patient_electronic_health_record = {}
     allergy_important_keys = ['CATEGORY', 'CODE', 'SYSTEM', 'DESCRIPTION', 'DESCRIPTION1', 'START', 'STOP' 'SEVERITY1', 'REACTION1', 'SEVERITY2', 'REACTION2']

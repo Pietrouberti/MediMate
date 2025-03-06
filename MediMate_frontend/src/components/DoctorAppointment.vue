@@ -52,6 +52,7 @@
             <button class="button button--form" @click="getEncounterSummary()" :disabled="selectedPatient.id == null || fetchingInformation">Summaries past appointments</button>
             <button class="button button--form" @click="getMedicationSummary()" :disabled="selectedPatient.id == null || fetchingInformation">Summaries current active medication</button>
             <button class="button button--form" @click="getAllergySummary()" :disabled="selectedPatient.id == null || fetchingInformation">Summaries allergies</button>
+            <button class="button button--form" @click="getConditionSummary()" :disabled="selectedPatient.id == null || fetchingInformation">Summaries Conditions</button>
         </div>
     </div>
     <div class="office__title-container">
@@ -116,7 +117,10 @@ const emit = defineEmits([
     'clearMedicationResponse',
     'allergySummary', 
     'allergySummaryLoader',
-    'clearAllergyResponse'
+    'clearAllergyResponse',
+    'conditionSummary',
+    'conditionSummaryLoader',
+    'clearConditionResponse'
 ])
 
 const fetchingInformation = ref(false);
@@ -125,9 +129,6 @@ const userStore = useUserStore();
 
 const patients = ref([])
 
-const encountersRecordSummary = ref('')
-const medicationRecordSummary = ref('')
-const allergyRecordSummary = ref('')
 
 onMounted(async() => {
     await getPatientList()
@@ -217,10 +218,9 @@ const getMedicationSummary = async() => {
     }).then((response) => {
         if (response.data.success) {
             fetchingInformation.value = false;
-            medicationRecordSummary.value = response.data.summary
             console.log("Medication RAG Information: \n \n \n", response.data.RAG)
             // emit value of the medication summary to the parent component
-            emit('medicationSummary', medicationRecordSummary.value)
+            emit('medicationSummary', response.data.summary)
             // notify parent component to stop loading animation
             emit('medicationSummaryLoader', false)
         }
@@ -243,9 +243,8 @@ const getAllergySummary = async() => {
     }).then((response) => {
         if(response.data.success) {
             fetchingInformation.value = false;
-            allergyRecordSummary.value = response.data.summary;
             // emit summary to parent component
-            emit('allergySummary', allergyRecordSummary.value);
+            emit('allergySummary', response.data.summary);
             // stop the loading animation
             emit('allergySummaryLoader', false);
         }
@@ -270,10 +269,8 @@ const getEncounterSummary = async() => {
     }).then((response) => {
         if(response.data.success) {
             fetchingInformation.value = false;
-            encountersRecordSummary.value = response.data.summary;
-            console.log("Encounter RAG Information: \n \n \n", response.data.RAG)
             // emit value to parent component
-            emit('encounterSummary', encountersRecordSummary.value)
+            emit('encounterSummary', response.data.summary)
             // stop loading animation
             emit('encounterSummaryLoader', false)
         }
@@ -283,6 +280,29 @@ const getEncounterSummary = async() => {
     })
 }
 
+const getConditionSummary = async() => {
+    fetchingInformation.value = true;
+    // clear previous response
+    emit('clearConditionResponse')
+    // start the loading animation
+    emit('conditionSummaryLoader', true)
+    await axios.get('api/llm_generation/get_summary/conditions/' + selectedPatient.value.id, {
+        headers: {
+            'Authorization': `Bearer ${userStore.user.accessToken}`
+        }
+    }).then((response) => {
+        if (response.data.success) {
+            fetchingInformation.value = false;
+            // emit value to parent component
+            emit('conditionSummary', response.data.summary)
+            //stop loading animation
+            emit('conditionSummaryLoader', false)
+        }
+    }).catch((error) => {
+        console.error(error)
+        emit('conditionSummaryLoader', false)
+    })
+}
 
 
 </script>

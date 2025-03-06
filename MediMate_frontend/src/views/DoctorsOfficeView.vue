@@ -20,6 +20,9 @@
            @clearEncounterResponse="handleEncounterClear"
            @clearMedicationResponse="handleMedicationClear"
            @clearAllergyResponse="handleAllergyClear"
+           @conditionSummary="handleConditionSummary"
+           @conditionSummaryLoader="handleCondtionLoader"
+           @clearConditionResponse="handleConditionClear"
             />
         </div>
         <div class="office__col">
@@ -31,6 +34,8 @@
             :medicationLoader="medicationLoader"
             :patientAllergySummary="patientAllergySummary"
             :allergyLoader="allergyLoader"
+            :patientConditionSummary="patientConditionSummary"
+            :conditionLoader="conditionLoader"
             />
         </div>
     </div> 
@@ -58,10 +63,12 @@ const router = useRouter();
 const patientEncounterSummary = ref({});
 const patientMedicationSummary = ref({});
 const patientAllergySummary = ref({})
+const patientConditionSummary = ref({})
 
 const medicationLoader = ref(false)
 const encounterLoader = ref(false)
 const allergyLoader = ref(false)
+const conditionLoader = ref(false)
 
 window.scrollTo(0, 64);
 // on page load check what theme is set and change the colours accordingly
@@ -81,24 +88,32 @@ const handleEncounterSummary = (data) => {
     patientEncounterSummary.value = data;
 }
 
-const handleEncounterLoader = (bool) => {
-    encounterLoader.value = bool;
-}
-
 const handleMedicationSummary = (data) => {
     patientMedicationSummary.value = data
-}
-
-const handleMedicationLoader = (bool) => {
-    medicationLoader.value = bool
 }
 
 const handleAllergySummary = (data) => {
     patientAllergySummary.value = data
 }
 
+const handleConditionSummary = (data) => {
+    patientConditionSummary.value = data
+}
+
 const handleAllergyLoader = (bool) => {
     allergyLoader.value = bool
+}
+
+const handleMedicationLoader = (bool) => {
+    medicationLoader.value = bool
+}
+
+const handleEncounterLoader = (bool) => {
+    encounterLoader.value = bool;
+}
+
+const handleCondtionLoader = (bool) => {
+    conditionLoader.value = bool
 }
 
 const handleAllergyClear = () => {
@@ -112,6 +127,11 @@ const handleEncounterClear = () => {
 const handleMedicationClear = () => {
     patientMedicationSummary.value = {}
 }
+
+const handleConditionClear = () => {
+    patientConditionSummary.value = {}
+}
+
 
 // helper fuction to change medichat form elements to match the theme
 const changeElementColours = (backgroundColour, colour, transition) => {
