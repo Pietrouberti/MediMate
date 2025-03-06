@@ -1,42 +1,81 @@
 <template>
     <div class="office__title-container">
-        <h2 class="heading heading__h3">MediMate Chat</h2>
+        <h2 class="heading heading__h3">MediMate EHR Summary</h2>
     </div>
     <div class="office__output-container">
-        <p class="heading heading__p">Patient Past Appointments</p>
-        <div class="office__output-inner-container">
-            <div class="office__loader" v-if="props.encounterLoader"></div>
-            <p class="heading heading__p" v-if="props.patientEncounterSummary" >{{props.patientEncounterSummary.summary}}</p>
-            <p class="heading heading__p" v-if="props.patientEncounterSummary" v-for="item in props.patientEncounterSummary.encounters" v-bind:key="item">
-                <p style="font-weight: bold;">{{ item.date }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
-            </p>
-            <p class="heading heading__p" v-if="Object.keys(props.patientEncounterSummary).length == 0 && !props.encounterLoader">Nothing to see here</p>
+        <div class="office__output-headers">
+            <ul class="office__output-header-list">
+                <li class="office__output-header-item" v-for="item, key in summaryObject" v-bind:key="item" :id="`${key}`" @click="toggleActiveSection(key)">{{item.heading}}</li>
+            </ul>
         </div>
-    </div>
-    <div class="office__output-container">
-        <p class="heading heading__p">Current and Past Medication</p>
         <div class="office__output-inner-container">
-            <div class="office__loader" v-if="props.medicationLoader"></div>
-            <p class="heading heading__p" v-if="props.patientMedicationSummary">{{props.patientMedicationSummary.summary}}</p>
-            <p class="heading heading__p" v-if="props.patientMedicationSummary" v-for="item in props.patientMedicationSummary.medications" v-bind:key="item">
-                <p style="font-weight: bold;">{{ item.startDate }} - {{ item.endDate }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
-            </p>
-            <p class="heading heading__p" v-if="Object.keys(props.patientMedicationSummary).length == 0 && !props.medicationLoader">Nothing see here...</p>
-        </div>
-    </div>
-    <div class="office__output-container">
-        <p class="heading heading__p">Allergies</p>
-        <div class="office__output-inner-container">
-            <div class="office__loader" v-if="props.allergyLoader"></div>
-            <p class="heading heading__p" v-if="props.patientAllergySummary">{{props.patientAllergySummary.summary}}</p>
-            <p class="heading heading__p" v-if="props.patientAllergySummary" v-for="item in props.patientAllergySummary.allergy" v-bind:key="item">
-                <p style="font-weight: bold;">{{item.date}} <span style="font-weight:normal">{{item.details}}</span></p>
-            </p>
-            <p class="heading heading__p" v-if="Object.keys(props.patientAllergySummary).length == 0 && !props.allergyLoader">Nothing see here...</p>
+            <div class="office__output-contents" id="encounterSummary">
+                <div class="office__loader" v-if="encounterLoader"></div>
+                <p class="heading heading__p" v-if="Object.keys(summaryObject.encounterSummary.data).length != 0">{{summaryObject.encounterSummary.data.summary}}</p>
+                <p class="heading heading__p" v-if="Object.keys(summaryObject.encounterSummary.data).length == 0 && !encounterLoader">Select a patient and click `summarise past appointments`.</p>
+                <div v-if="Object.keys(summaryObject.encounterSummary.data).length != 0" v-for="item in summaryObject.encounterSummary.data.encounters" v-bind:key="item">
+                    <p style="font-weight: bold;">{{ item.date }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
+                </div>
+            </div>
+            <div class="office__output-contents" id="medicationSummary">
+                <div class="office__loader" v-if="medicationLoader"></div>
+                <p class="heading heading__p" v-if="Object.keys(summaryObject.medicationSummary.data).length != 0">{{summaryObject.medicationSummary.data.summary}}</p>
+                <p class="heading heading__p" v-if="Object.keys(summaryObject.medicationSummary.data).length == 0 && !medicationLoader">Select a patient and click `summarise past and current medication`.</p>
+                <div v-if="Object.keys(summaryObject.medicationSummary.data).length != 0" v-for="item in summaryObject.medicationSummary.data.medications" v-bind:key="item">
+                    <p style="font-weight: bold;">{{ item.startDate }} - {{ item.endDate }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
+                </div>
+            </div>
+            <div class="office__output-contents" id="allergySummary">
+                <div class="office__loader" v-if="allergyLoader"></div>
+                <p class="heading heading__p" v-if="Object.keys(summaryObject.allergySummary.data).length != 0">{{summaryObject.allergySummary.data.summary}}</p>
+                <p class="heading heading__p" v-if="Object.keys(summaryObject.allergySummary.data).length == 0 && !allergySummary">Select a patient and click `summarise allergies`.</p>
+                <div v-if="Object.keys(summaryObject.allergySummary.data).length != 0" v-for="item in summaryObject.allergySummary.data.allergy" v-bind:key="item">
+                    <p style="font-weight: bold;">{{ item.date }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
+                </div>
+            </div>
         </div>
     </div>
 </template>
 <script setup>
+import { ref, watch, onMounted } from 'vue';
+
+
+onMounted(() => {
+    toggleActiveSection('encounterSummary')
+})
+
+
+const summaryObject = ref({
+    encounterSummary: {heading: 'Appointments', data: {}},
+    medicationSummary: {heading: 'Medications', data: {}},
+    allergySummary: {heading: 'Allergies', data: {}},
+
+})
+
+
+const toggleActiveSection = (key) => {
+    const summarySections = document.querySelectorAll('.office__output-contents');
+    const summaryHeader = document.querySelectorAll('.office__output-header-item');
+    summaryHeader.forEach((header) => {
+        if (header.id != key) {
+            header.classList.remove('office__output-header-item--active');
+        }
+        else {
+            header.classList.add('office__output-header-item--active')
+        }
+    })
+    summarySections.forEach((section) => {
+        if (section.id != key) {
+            section.style.display = 'none';
+        }
+        else {
+            section.style.display = 'block';
+        }
+    });
+
+}
+
+
 const props = defineProps({
     patientEncounterSummary: Object,
     encounterLoader: Boolean, 
@@ -46,5 +85,15 @@ const props = defineProps({
     allergyLoader: Boolean,
 })
 
-console.log(props)
+watch(() => [props.patientEncounterSummary, props.patientMedicationSummary, props.patientAllergySummary],
+    ([newEncounterSummary, newMedicationSummary, newAllergySummary]) => {
+        summaryObject.value.encounterSummary.data = newEncounterSummary
+        summaryObject.value.medicationSummary.data = newMedicationSummary
+        summaryObject.value.allergySummary.data = newAllergySummary
+        console.log(summaryObject.value)
+    },
+    { deep: true }
+);
+
+
 </script>

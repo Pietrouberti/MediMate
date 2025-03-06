@@ -217,13 +217,36 @@ $secondary-color: #007bff;
             margin-left: 2px ;
         }
     }
+    &__output-header-list {
+        list-style-type: none;
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        padding: 0;
+    }
+    &__output-header-item {
+        border: 1px solid $primary-color;
+        border-bottom: 0px;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        color: $primary-color;
+        background-color: transparent;
+        padding: 10px 20px;
+        cursor: pointer;
+        user-select: none;
+        &--active {
+            background-color: $primary-color;
+            color: white;
+        }
+    }
     &__output-inner-container {
         border: 1px solid $primary-color;
         width: 100%;
-        min-height: 300px;
-        max-height: 300px;
+        height: 1020px;
         overflow-y: auto;
-        border-radius: 10px;
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+        border-top-right-radius: 10px;
         padding: 10px;
         background-color: transparent;
         color: black;
@@ -232,6 +255,21 @@ $secondary-color: #007bff;
         &--export {
             min-height: 148px;
             max-height: 148px;
+        }
+        /* Custom scrollbar styles */
+        &::-webkit-scrollbar {
+            width: 12px;
+        }
+        &::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        &::-webkit-scrollbar-thumb {
+            background: $primary-color;
+            border-radius: 10px;
+        }
+        &::-webkit-scrollbar-thumb:hover {
+            background: darken($primary-color, 10%);
         }
     }
     
