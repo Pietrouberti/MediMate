@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+# defines the parent url path for individual module endpoints and points to module url files to include defined endpoint urls and api methods
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/doctor/', include('account.urls')),

@@ -31,6 +31,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# Overrides the Django default user model
 AUTH_USER_MODEL = 'account.User'
 
 

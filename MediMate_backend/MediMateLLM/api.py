@@ -12,12 +12,15 @@ import json
 
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
 
+
+# MedicalRecordGenerator class used for querying LLM 
 class MedicalRecordGenerator():
     def __init__(self):
-        self.model_name = "mistral"
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.chunk_size = 800
-        
+        self.model_name = "mistral" # defines model to be used
+        self.device = "cuda" if torch.cuda.is_available() else "cpu" # this is redundant code but if I make a switch to hugging face I have included it
+        self.chunk_size = 800 # defines a maximum rag information token size in order to prevent passing an excess amount of tokens to LLM
+     
+    # splits the retrived data into chunks of data such that it doesn't exceed the chunk_size limit    
     def split_prompt_text(self, rag_info):
         items = rag_info.split('|')
         prompt_chunks = []
@@ -34,7 +37,8 @@ class MedicalRecordGenerator():
             prompt_chunks.append(current_chunk.strip())
 
         return prompt_chunks
-        
+    
+    # Querys LLM through Ollama endpoint
     def summarise_health_record(self, text_prompt):
         print("Summarisation in progress...")
         
@@ -52,6 +56,7 @@ class MedicalRecordGenerator():
         except Exception as e:
             return e
 
+    # takes the LLM `json` text response and converts it into an actual json format
     def combine_summaries_as_json(self, summary_list, parentKey ,orderKey):
         json_list = []
         print("Response", summary_list)
@@ -70,6 +75,9 @@ class MedicalRecordGenerator():
         print(json.dumps(combined, indent=4))
         return combined
 
+
+
+# end point for patient medication summary
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
@@ -114,6 +122,8 @@ def get_medication_records(request, id):
     except Exception as e:
         return JsonResponse({'error': e, 'success': False})
 
+
+# end point for patient allergy summary
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
@@ -121,12 +131,12 @@ def get_allergy_records(request, id):
     try:
         constructed_prompt_list = []
         summary_responses = []
-        patient_id = str(id)
-        results = rag_entry_point(patient_id, '', 'allergy')
+        patient_id = str(id) # converts patient id to str for vector db query
+        results = rag_entry_point(patient_id, '', 'allergy') # retrives patient information from vector db 
         allergy_information = results.get('allergy', 'no allergies')
-        generator = MedicalRecordGenerator()
-        chunked_info = generator.split_prompt_text(allergy_information)
-        for i in chunked_info:
+        generator = MedicalRecordGenerator() # initiate the MedicalRecordGenerator class
+        chunked_info = generator.split_prompt_text(allergy_information) # splits the retrived information into suitable token sizes
+        for i in chunked_info: # loops through each chunk and adds it to query
             constructed_prompt = f''' 
             Allergy Information:
             {i}
@@ -144,19 +154,21 @@ def get_allergy_records(request, id):
             }} 
             Ensure that the output is valid JSON, if there are no allergies present return an empty list and no additional text or comments
             '''
-            constructed_prompt_list.append(constructed_prompt)
+            constructed_prompt_list.append(constructed_prompt) # collects all the constructed queries 
             
         print("constructed Prompts: \n \n ", constructed_prompt_list)
-        for i in constructed_prompt_list:
+        for i in constructed_prompt_list: # loops through each constructed query and requests LLM for response
             print("generating response: ", i, " package: \n ", i)   
             summary_responses.append(generator.summarise_health_record(i))
         
-        summary = generator.combine_summaries_as_json(summary_responses, 'allergy' ,'date')
-        summary['summary'] = generator.summarise_health_record('Summaries this text with no additional text or comments: ' + summary['summary']) 
+        summary = generator.combine_summaries_as_json(summary_responses, 'allergy' ,'date') # converts LLM response into JSON for frontend managment
+        summary['summary'] = generator.summarise_health_record('Summaries this text with no additional text or comments: ' + summary['summary']) # summaries the concatenated summaries improving summary clarity 
         return JsonResponse({'success': True, 'summary': summary, 'RAG': allergy_information})
     except Exception as e:
-        return JsonResponse({'success': False, 'error': e})
+        return JsonResponse({'success': False, 'error': e}) # pass error to frontend if something fails
 
+
+# end point for encounter allergy summary
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
@@ -204,7 +216,7 @@ def get_encounter_records(request, id):
         print(e)
         return JsonResponse({'error': str(e), 'success': False})
 
-
+# end point for condition allergy summary
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])

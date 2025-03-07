@@ -2,7 +2,7 @@ import pandas as pd
 from datetime import datetime
 from patients.models import Patients
 
-
+# Function to clean dataset from null values and `dead` patients 
 def clean_patient_data(file_path):
     df = pd.read_csv(file_path)
     patient_columns_of_interest = {
@@ -33,6 +33,10 @@ def clean_patient_data(file_path):
     
     return df
 
+
+
+# Entry point for patient dataset loader, this function cleans the patients dataset and then bulk creates the CSV entries within Django's standard SQL database
+# This function permits `Doctors` to select specific patient from the frontend and request summaries 
 def load_patients_into_db(file_path):
     cleaned_df = clean_patient_data(file_path)
     

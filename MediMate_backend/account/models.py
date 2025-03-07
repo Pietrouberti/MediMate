@@ -26,6 +26,7 @@ class CustomUserManager(UserManager):
         return self._create_user(name, email, password, **extra_fields)
         
 
+# Define abstracted default user model and attributes 
 class User(AbstractUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     email = models.EmailField(unique=True)

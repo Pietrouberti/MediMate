@@ -13,6 +13,7 @@ Load in 1000 patient dataset by executing file with load_dataset() as entry poin
 
 '''
 
+# Entry point for initialisation of vector database, it loads the CSV files and executes seperate indexing functions
 def load_dataset():
     allergies_dataset = pd.read_csv('A:/Dissertation/MediMate/MediMate/Datasets/allergies.csv')
     conditions_dataset = pd.read_csv('A:/Dissertation/MediMate/MediMate/Datasets/conditions.csv')
@@ -24,12 +25,14 @@ def load_dataset():
     index_encounters_data(encounters_dataset)
     index_medications_data(medications_dataset)
 
-
+# generates embeddings for vector db
 def generate_embeddings(df, embedding_columns):
     df['index_text'] = df[embedding_columns].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
     embeddings = model.encode(df['index_text'].tolist(), show_progress_bar=True)
     return df, embeddings
 
+
+# indexes allergy data by adding embedding to the specific vector db collection
 def index_allergy_data(df):
     df, allergy_embeddings = generate_embeddings(df, ['DESCRIPTION', 'TYPE', 'CATEGORY', 'REACTION1', 'DESCRIPTION1', 'REACTION2', 'DESCRIPTION2'])
     for i, row in df.iterrows():
@@ -39,7 +42,8 @@ def index_allergy_data(df):
             documents=[row['index_text']],
             metadatas=[row.to_dict()]
         )
-    
+
+# indexes conditions data by adding embedding to the specific vector db collection
 def index_conditions_data(df):
     df, conditions_embeddings = generate_embeddings(df, ['DESCRIPTION'])
     for i, row in df.iterrows():
@@ -50,6 +54,7 @@ def index_conditions_data(df):
             metadatas=[row.to_dict()]
         )
 
+# indexes encounters data by adding embedding to the specific vector db collection
 def index_encounters_data(df):
     df, encounters_embeddings = generate_embeddings(df, ['ENCOUNTERCLASS', 'DESCRIPTION', 'REASONDESCRIPTION'])
     for i, row in df.iterrows():
@@ -60,6 +65,7 @@ def index_encounters_data(df):
             metadatas=[row.to_dict()]
         )
 
+# indexes medications data by adding embedding to the specific vector db collection
 def index_medications_data(df):
     df, medications_embeddings = generate_embeddings(df, ['DESCRIPTION', 'REASONDESCRIPTION'])
     for i, row in df.iterrows():
@@ -71,6 +77,7 @@ def index_medications_data(df):
         )
 
 # note to self: ustalise the query text parameter to permit doctor to fetch similar records
+# entry point for dynamic patient data retrival, it fetches all relevant patient information, and once implemented will search DB for similar cases using query_text param
 def rag_entry_point(patient_id, query_text, params):
     patient_electronic_health_record = {}
     allergy_important_keys = ['CATEGORY', 'CODE', 'SYSTEM', 'DESCRIPTION', 'DESCRIPTION1', 'START', 'STOP' 'SEVERITY1', 'REACTION1', 'SEVERITY2', 'REACTION2']
@@ -109,7 +116,7 @@ def rag_entry_point(patient_id, query_text, params):
         return patient_electronic_health_record
     
 
-    
+# formats the retrived patient data by converting Python dictionary into a string and seperating entries with the | for simplified individual item extraction    
 def format_dataset_record(retrieval_results, keys):
     formatted_records = []
     for record in retrieval_results:
@@ -118,11 +125,14 @@ def format_dataset_record(retrieval_results, keys):
     return " | ".join(formatted_records)
 
 
+# queries the vector db for specific patient data
 def patient_record_collector(patient_id, collection_obj):
      results = collection_obj.get(where={"PATIENT": patient_id})
      metadatas = results.get('metadatas', [])
      return metadatas
 
+
+# will be used to search for top_k amount of similar data entries using the query text parameter
 def similar_record_context_search(query_text, collection_obj, top_k=2):
     query_embedding = model.encode([query_text]).tolist()
     results = collection_obj.query(

@@ -7,7 +7,7 @@ from .serializers import  UserSerializer
 # from dataset_uploader.patient_uploader import load_patients_into_db
 
 
-'''Endpoint to get the details of the currently logged in user'''
+# Endpoint to get the details of the currently logged in user, used for frontend authentication
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
