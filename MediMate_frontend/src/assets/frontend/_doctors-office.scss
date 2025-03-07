@@ -121,7 +121,7 @@ $secondary-color: #007bff;
         list-style-type: none;
         top: calc(100% - 15px);
         left: 10px;
-        max-height: 150px;
+        max-height: 350px;
         overflow-y: auto;
         z-index: 1000;
         color: black;
@@ -275,7 +275,7 @@ $secondary-color: #007bff;
             width: 12px;
         }
         &::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: transparent;
             border-radius: 10px;
         }
         &::-webkit-scrollbar-thumb {
@@ -283,6 +283,7 @@ $secondary-color: #007bff;
             border-radius: 10px;
         }
         &::-webkit-scrollbar-thumb:hover {
+            cursor: grab;
             background: darken($primary-color, 10%);
         }
     }
