@@ -4,7 +4,10 @@
     </div>
     <div class="office__input-item">
         <label for="patient_search">Find Patient</label>
-        <input type="text" class="office__input" v-model="searchQuery" placeholder="Search for a patient" @focus="showDropdown = true" @blur="hideDropdown" />
+        <div class="office__input-container">
+            <input type="text" class="office__input" v-model="searchQuery" placeholder="Search for a patient" @focus="showDropdown = true" @blur="hideDropdown" />
+            <p class="office__clear-patient heading heading__p" v-if="selectedPatient.id != null" @click="removeSelectedPatient()">X</p>
+        </div>
         <ul v-if="showDropdown && filteredPatients.length" class="office__dropdown">
             <li v-for="patient in filteredPatients" :key="patient.id" @mousedown.prevent="selectPatient(patient)">
                 {{ patient.first_name }} {{ patient.last_name }}
@@ -193,9 +196,21 @@ const filteredPatients = computed(() => {
 const selectPatient = (patient) => {
     searchQuery.value = patient.first_name + ' ' + patient.last_name;
     selectedPatient.value = patient;
-    console.log("Test time",selectedPatient.value);
     showDropdown.value = false;
 };
+
+const removeSelectedPatient = () => {
+    searchQuery.value = "";
+    selectedPatient.value = {
+        id: null,
+        first_name: null,
+        last_name: null,
+        age: null,
+        gender: null,
+        ethnicity: null,
+        address: null,
+    }
+}
 
 // hide dropdown after 200ms for smoother transition and silky UX
 const hideDropdown = () => {

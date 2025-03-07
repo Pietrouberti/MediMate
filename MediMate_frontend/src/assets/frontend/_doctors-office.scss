@@ -187,6 +187,20 @@ $secondary-color: #007bff;
             margin-left: 2px ;
         }
     }
+    &__input-container {
+        position: relative;
+        width: 100%;
+    }
+    &__clear-patient {
+        color: red; 
+        font-weight: 900; 
+        user-select: none; 
+        cursor: pointer;
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+    }
     &__notes-area {
         width: 100%;
         padding: 10px;

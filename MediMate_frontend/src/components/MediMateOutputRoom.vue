@@ -107,5 +107,21 @@ watch(() => [props.patientEncounterSummary, props.patientMedicationSummary, prop
     { deep: true }
 );
 
+watch(() => props.encounterLoader, (newVal) => {
+    toggleActiveSection('encounterSummary')
+});
+
+watch(() => props.medicationLoader, (newVal) => {
+    toggleActiveSection('medicationSummary')
+});
+
+watch(() => props.allergyLoader, (newVal) => {
+    toggleActiveSection('allergySummary')
+});
+
+watch(() => props.conditionLoader, (newVal) => {
+    toggleActiveSection('conditionSummary')
+});
+
 
 </script>

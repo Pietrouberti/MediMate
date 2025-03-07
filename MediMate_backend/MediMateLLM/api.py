@@ -4,24 +4,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 import torch
 import requests
-from API_KEYS import MediMate_API_KEY
-from .prompt import prompt
-from patients.models import Patients
-from patients.serializers import PatientSerializer
 from dataset_uploader.vector_database_indexer import rag_entry_point
-from transformers import AutoModelForCausalLM, LlamaTokenizer
 import torch
 import tiktoken
 import json
-''' 
-Notes to self:
-
-Need to implement dynamic token checking for RAG and split payload
-requests in order to capture all user information. Change the JSON conversion from JS to python 
-script to construct final output in backend
-
-
-'''
 
 
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
@@ -30,17 +16,23 @@ class MedicalRecordGenerator():
     def __init__(self):
         self.model_name = "mistral"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.chunk_size = 400
+        self.chunk_size = 800
         
     def split_prompt_text(self, rag_info):
-        encoding = tiktoken.get_encoding("gpt2")
-        tokens = encoding.encode(rag_info);
+        items = rag_info.split('|')
         prompt_chunks = []
-        for i in range(0, len(tokens), self.chunk_size):
-            chunk_token = tokens[i:i + self.chunk_size]
-            chunk_text = encoding.decode(chunk_token)
-            prompt_chunks.append(chunk_text)
-        
+        current_chunk = ""
+
+        for item in items:
+            if len(current_chunk) + len(item) + 1 > self.chunk_size:
+                prompt_chunks.append(current_chunk.strip())
+                current_chunk = item + "|"
+            else:
+                current_chunk += item + "|"
+
+        if current_chunk:
+            prompt_chunks.append(current_chunk.strip())
+
         return prompt_chunks
         
     def summarise_health_record(self, text_prompt):
@@ -117,6 +109,7 @@ def get_medication_records(request, id):
             summary_responses.append(generator.summarise_health_record(i))
         
         summary = generator.combine_summaries_as_json(summary_responses, 'medications' ,'startDate')
+        summary['summary'] = generator.summarise_health_record('Summaries this text with no additional text or comments: ' + summary['summary'])
         return JsonResponse({'success': True, 'summary': summary, 'RAG': medication_information})
     except Exception as e:
         return JsonResponse({'error': e, 'success': False})
@@ -130,13 +123,11 @@ def get_allergy_records(request, id):
         summary_responses = []
         patient_id = str(id)
         results = rag_entry_point(patient_id, '', 'allergy')
-        allergy_information = results.get('appointments', 'no allergies')
+        allergy_information = results.get('allergy', 'no allergies')
         generator = MedicalRecordGenerator()
         chunked_info = generator.split_prompt_text(allergy_information)
         for i in chunked_info:
-            constructed_prompt = f''' Summarise **all** the patient's allergies in an organised manner.
-            List the allergies in descending order (most recent last).
-            
+            constructed_prompt = f''' 
             Allergy Information:
             {i}
             
@@ -161,6 +152,7 @@ def get_allergy_records(request, id):
             summary_responses.append(generator.summarise_health_record(i))
         
         summary = generator.combine_summaries_as_json(summary_responses, 'allergy' ,'date')
+        summary['summary'] = generator.summarise_health_record('Summaries this text with no additional text or comments: ' + summary['summary']) 
         return JsonResponse({'success': True, 'summary': summary, 'RAG': allergy_information})
     except Exception as e:
         return JsonResponse({'success': False, 'error': e})
@@ -205,6 +197,7 @@ def get_encounter_records(request, id):
             summary_responses.append(generator.summarise_health_record(i))
         
         summary = generator.combine_summaries_as_json(summary_responses, 'encounters' ,'date')
+        summary['summary'] = generator.summarise_health_record('Summaries this text with no additional text or comments: ' + summary['summary'])
         return JsonResponse({'success': True, 'summary': summary, 'RAG': encounter_information})
     
     except Exception as e:
@@ -252,6 +245,7 @@ def get_condition_records(request, id):
             summary_responses.append(generator.summarise_health_record(i))
         
         summary = generator.combine_summaries_as_json(summary_responses, 'conditions', 'startDate')
+        summary['summary'] = generator.summarise_health_record('Summaries this text with no additional text or comments: ' + summary['summary'])
         return JsonResponse({'success': True, 'summary': summary, 'RAG': condition_information})
     except Exception as e:
         print(e)
