@@ -30,10 +30,10 @@
     async function submitForm() {
         errors.value = []
         if(form.value.email === "") {
-            errors.value.push('Missing email')
+            errors.value.push('Please enter your email')
         }
         if(form.value.password === "") {
-            errors.value.push("Missing password")
+            errors.value.push("Please enter your password")
         }
 
         if(errors.value.length === 0) {
@@ -41,8 +41,9 @@
                 userStore.setToken(response.data)
                 axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`
                 getUserDetails()
+            }).catch((error) => {
+                errors.value.push(error.response.data.detail)
             })
-            console.log("Submitted Form", form.value)
         }
     }
     async function getUserDetails() {

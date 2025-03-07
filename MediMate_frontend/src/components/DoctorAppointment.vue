@@ -143,7 +143,6 @@ const getPatientList = async() => {
             'Authorization': `Bearer ${userStore.user.accessToken}`
         }
     }).then((response) => {
-        console.log(response)
         if (response.data.success == true) {
             patients.value = response.data.patients 
         }
@@ -173,9 +172,7 @@ const showDropdown = ref(false);
 
 // filter patient list based on search query
 const filteredPatients = computed(() => {
-    console.log(patients.value)
     if (!patients.value || patients.value.length === 0) return[];
-    console.log(searchQuery.value);
     return patients.value
         .filter(patient => 
             patient.first_name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
@@ -233,7 +230,6 @@ const getMedicationSummary = async() => {
     }).then((response) => {
         if (response.data.success) {
             fetchingInformation.value = false;
-            console.log("Medication RAG Information: \n \n \n", response.data.RAG)
             // emit value of the medication summary to the parent component
             emit('medicationSummary', response.data.summary)
             // notify parent component to stop loading animation

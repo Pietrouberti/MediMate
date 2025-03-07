@@ -102,7 +102,6 @@ watch(() => [props.patientEncounterSummary, props.patientMedicationSummary, prop
         summaryObject.value.medicationSummary.data = newMedicationSummary
         summaryObject.value.allergySummary.data = newAllergySummary
         summaryObject.value.conditionSummary.data = newConditionSummary
-        console.log(summaryObject.value)
     },
     { deep: true }
 );
