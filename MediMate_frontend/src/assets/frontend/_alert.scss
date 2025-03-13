@@ -1,0 +1,33 @@
+.alert {
+    display: flex;
+    justify-content: flex-start;
+    width: fit-content;
+    align-items: center;
+    padding: 10px 20px;
+    color: white;
+    position: fixed;
+    bottom: calc(10px + (54px * (var(--messageCount) + 1)));
+    right: 10px;
+    gap: 20px;
+    animation: drop-in 1s ease-in-out;
+    border-radius: 10px;    
+    z-index: 10000000;
+
+    &__icon {
+        width: 25px;
+        height: 25px;
+    }
+}
+
+@keyframes drop-in {
+    0% {
+        bottom: -40px;
+        right: 10px;
+        opacity: 0;
+    }
+    100% {
+        bottom: calc(10px + (54px * (var(--messageCount) + 1)));
+        right: 10px;
+        opacity: 1;
+    }
+}

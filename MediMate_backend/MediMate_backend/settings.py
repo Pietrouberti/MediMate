@@ -185,4 +185,5 @@ allergy_collection = chroma_client.get_or_create_collection(name='allergy_collec
 condition_collection = chroma_client.get_or_create_collection(name='condition_collections')
 encounter_collection = chroma_client.get_or_create_collection(name='encounter_collection')
 medication_collection = chroma_client.get_or_create_collection(name='medication_collection')
+drug_interaction_collection = chroma_client.get_or_create_collection(name='drug_drug_interaction_collection')
 model = SentenceTransformer('all-MiniLM-L6-v2')

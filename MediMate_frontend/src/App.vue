@@ -3,6 +3,7 @@ import { RouterLink, RouterView } from 'vue-router'
 import { onMounted , ref} from 'vue';
 import { useUserStore } from '@/stores/user';
 import NavigationBar from './components/NavigationBar.vue';
+import Alert from './components/Alert.vue';
 
 import { watch } from 'vue';
 import { useRoute } from 'vue-router';
@@ -11,7 +12,28 @@ const route = useRoute();
 const overflow = ref(null);
 const height = ref(null)
 const userStore = useUserStore();
+const alertList = ref([])
 
+const removeAlertFromArray = (id) => {
+  alertList.value.splice(id, 1)
+}
+
+const handleDiagnosisVerificationEmit = (payload) => {
+  let dangerColour = '';
+  let serverity = '';
+  let message = '';
+  if (payload.label === "LABEL_1") {
+    dangerColour = '#43bb2b';
+    serverity = '';
+    message = 'MediMate System is ' + (payload.score * 100).toFixed(5) + '% confident that the diagnosis is correct';
+  }
+  else {
+    dangerColour = '#fc4040';
+    serverity = '';
+    message = 'MediMate System is ' + (payload.score * 100).toFixed(5) + '% confident that the diagnosis is incorrect';
+  }
+  alertList.value.push({'dangerColour': dangerColour, 'serverity': serverity, 'message': message, 'messageType': 'diagnosis_alert'})
+}
 
 onMounted(() => {
   userStore.initStore();
@@ -33,14 +55,26 @@ watch(() => route.path, (newPath) => {
   { immediate: true }
 );
 
+
+
 </script>
 
 <template>
+
+  <Alert 
+  v-for="item, index in alertList" v-bind:key="item" 
+  :dangerColour="item.dangerColour" 
+  :serverity="item.serverity" 
+  :message="item.message" 
+  :messageCount="index"
+  :messageType="item.messageType"
+  @deleteAlertEmit="removeAlertFromArray"
+  />
   <!-- navigation bar component -->
   <NavigationBar />
   <div class="main" :style="`--overflow: ${overflow}; --height: ${height}`">
     <!-- where page contents is rendered after a url change -->
-    <RouterView />
+    <RouterView @diagnosisVerification="handleDiagnosisVerificationEmit" />
   </div> 
 </template>
 

@@ -64,44 +64,44 @@
     <div class="office__appointment-notes">
         <div class="office__patient-info">
             <div class="office__grid-input-item">
-                <label for="notes">Appointment Notes</label>
-                <textarea class="office__notes-area" name="notes" id="notes" placeholder="Appointment Notes"></textarea>
+                <label for="notes">Observations</label>
+                <textarea class="office__notes-area" name="notes" id="notes" placeholder="Appointment Notes" v-model="appointment.notes"></textarea>
             </div>
         </div>
         <div class="office__patient-info">
             <div class="office__grid-input-item">
                 <label for="Symptoms">Symptoms</label>
-                <input type="text" id="symptoms" class="office__grid-input" placeholder="Patient symptoms" />
+                <input type="text" id="symptoms" class="office__grid-input" placeholder="Patient symptoms" v-model="appointment.symptoms" />
             </div>
             <div class="office__grid-input-item">
                 <label for="Diagnosis">Diagnosis</label>
-                <input type="text" id="diagnosis" class="office__grid-input" placeholder="Diagnosis prediction" />
+                <input type="text" id="diagnosis" class="office__grid-input" placeholder="Diagnosis prediction" v-model="appointment.diagnosis" />
             </div>
         </div>
         <div class="office__patient-info">
             <div class="office__grid-input-item">
                 <label for="prescription-name">Prescription Name</label>
-                <input type="text" id="prescription-name" class="office__grid-input" placeholder="Name of prescription" />
+                <input type="text" id="prescription-name" class="office__grid-input" placeholder="Name of prescription" v-model="appointment.prescription"/>
             </div>
             <div class="office__grid-input-item">
                 <label for="prescription-dosage">Prescription Dosage</label>
-                <input type="text" id="prescription-dosage" class="office__grid-input" placeholder="Prescription dosage" />
+                <input type="text" id="prescription-dosage" class="office__grid-input" placeholder="Prescription dosage" v-model="appointment.dosage"/>
             </div>
         </div>
         <div class="office__patient-info">
             <div class="office__grid-input-item">
                 <label for="prescription-start">Prescription Start Date</label>
-                <input type="date" id="prescription-start" class="office__grid-input"/>
+                <input type="date" id="prescription-start" class="office__grid-input" v-model="appointment.prescription_start"/>
             </div>
             <div class="office__grid-input-item">
                 <label for="prescription-start">Prescription End Date</label>
-                <input type="date" id="prescription-start" class="office__grid-input"/>
+                <input type="date" id="prescription-start" class="office__grid-input" v-model="appointment.prescription_end"/>
             </div>
         </div>
         <div class="office__cta">
-            <button class="button button--form">Generate Medical Record</button>
+            <button class="button button--form" @click="verifyDoctorsDiagnosis" :disabled="appointment.diagnosis == null || appointment.symptoms == null || appointment.notes == null || selectedPatient.id == null">Verify diagnosis prediction</button>
             <button class="button button--form">Check for Prescription Clashes</button>
-            <button class="button button--form">Check for Allergy adverse drug effects</button>
+            <button class="button button--form">Download EHR Record</button>
         </div>
     </div>
 </template>
@@ -123,7 +123,8 @@ const emit = defineEmits([
     'clearAllergyResponse',
     'conditionSummary',
     'conditionSummaryLoader',
-    'clearConditionResponse'
+    'clearConditionResponse',
+    'emitDiagnosisVerification',
 ])
 
 const fetchingInformation = ref(false);
@@ -161,6 +162,17 @@ const selectedPatient = ref({
     ethnicity: null,
     address: null,
 });
+
+// appointment object
+const appointment = ref({
+    notes: null,
+    symptoms: null,
+    diagnosis: null,
+    prescription_start: null,
+    prescription_end: null,
+    prescription: null,
+    prescription_dosage: null,
+})
 
 
 // search patient v-model proxy varible
@@ -312,6 +324,29 @@ const getConditionSummary = async() => {
     }).catch((error) => {
         console.error(error)
         emit('conditionSummaryLoader', false)
+    })
+}
+
+const verifyDoctorsDiagnosis = async() => {
+    fetchingInformation.value = true;
+    await axios.post('api/llm_generation/verify_diagnosis/', {
+        headers: {
+            'Authorization': `Bearer ${userStore.user.accessToken}`
+        },
+        'patient' : {
+            'first_name': selectedPatient.value.first_name,
+            'age': selectedPatient.value.age,
+            'gender': selectedPatient.value.gender,
+            'ethnicity': selectedPatient.value.ethnicity,
+        },
+        'notes': appointment.value.notes,
+        'symptoms': appointment.value.symptoms,
+        'diagnosis': appointment.value.diagnosis,
+    }).then((response) => {
+        emit('emitDiagnosisVerification', response.data.result[0])
+        fetchingInformation.value = false;
+    }).catch((error) => {
+        console.log(error)
     })
 }
 

@@ -1,7 +1,8 @@
 import pandas as pd 
 import chromadb 
+import os
 from sentence_transformers import SentenceTransformer
-from MediMate_backend.settings import model, chroma_client, allergy_collection, encounter_collection, condition_collection, medication_collection
+from MediMate_backend.settings import model, allergy_collection, encounter_collection, condition_collection, medication_collection, drug_interaction_collection
 
 '''
 
@@ -19,7 +20,9 @@ def load_dataset():
     conditions_dataset = pd.read_csv('A:/Dissertation/MediMate/MediMate/Datasets/conditions.csv')
     encounters_dataset = pd.read_csv('A:/Dissertation/MediMate/MediMate/Datasets/encounters.csv')
     medications_dataset = pd.read_csv('A:/Dissertation/MediMate/MediMate/Datasets/medications.csv')
+    drug_interaction_dataset = pd.read_csv('A:/Dissertation/MediMate/MediMate/Datasets/filtered_drug_interactions.csv')
     
+    index_drug_interaction_data(drug_interaction_dataset)
     index_allergy_data(allergies_dataset)
     index_conditions_data(conditions_dataset)
     index_encounters_data(encounters_dataset)
@@ -31,6 +34,17 @@ def generate_embeddings(df, embedding_columns):
     embeddings = model.encode(df['index_text'].tolist(), show_progress_bar=True)
     return df, embeddings
 
+
+def index_drug_interaction_data(df):
+    df, drug_interaction_embeddings = generate_embeddings(df, ['Drug_A','Drug_B','Level'])
+    for i, row in df.iterrows():
+        drug_interaction_collection.add(
+            ids=[str(i)],
+            embeddings=[drug_interaction_embeddings[i].tolist()],
+            documents=[row['index_text']],
+            metadatas=[row.to_dict()]
+        )
+        print('indexing', i)
 
 # indexes allergy data by adding embedding to the specific vector db collection
 def index_allergy_data(df):
@@ -131,6 +145,10 @@ def patient_record_collector(patient_id, collection_obj):
      metadatas = results.get('metadatas', [])
      return metadatas
 
+def prescription_clash_record_collector(prescribed_drug, active_drug, collection_obj):
+    results = collection_obj.get(where={"$and": [{"Drug_A": prescribed_drug}, {"Drug_B": active_drug}]})
+    metadatas = results.get('metadatas', [])
+    return metadatas
 
 # will be used to search for top_k amount of similar data entries using the query text parameter
 def similar_record_context_search(query_text, collection_obj, top_k=2):
@@ -144,7 +162,6 @@ def similar_record_context_search(query_text, collection_obj, top_k=2):
     
 
 
-
 # Comment out the Medimate_backend inmports and uncomment code below. Run file to create vector database embeddings. Once created return code to previous state.
 
 # chroma_client = chromadb.PersistentClient(path='A:\Dissertation\MediMate\chroma_db')
@@ -152,5 +169,8 @@ def similar_record_context_search(query_text, collection_obj, top_k=2):
 # condition_collection = chroma_client.get_or_create_collection(name='condition_collections')
 # encounter_collection = chroma_client.get_or_create_collection(name='encounter_collection')
 # medication_collection = chroma_client.get_or_create_collection(name='medication_collection')
+# drug_interaction_collection = chroma_client.get_or_create_collection(name='drug_drug_interaction_collection')
 # model = SentenceTransformer('all-MiniLM-L6-v2')
-#load_dataset()
+# load_dataset()
+
+

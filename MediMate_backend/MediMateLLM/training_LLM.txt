@@ -1,0 +1,188 @@
+I have finetuned the emilyalsentzer/Bio_ClinicalBERT with the synthetically larger_diagnosis_dataset.csv file, found in Datasets folder. 
+Used Google Collab to fine tune model, this is the code I ran incrementally in order to fine tune the model.
+
+
+Fine Tuning Code
+
+    1. install requirements 
+    !pip install transformers datasets
+
+    2. Allowed me to upload my dataset
+    from google.colab import files
+    uploaded = files.upload()
+
+
+    3. Load dataset
+    mport pandas as pd
+    from datasets import Dataset
+
+    df = pd.read_csv("large_diagnosis_dataset.csv")
+    dataset = Dataset.from_pandas(df)
+
+    dataset.shuffle(seed=42).select(range(5))
+
+    4. Adding API token to google collab env
+    import os
+
+    # Enter your Hugging Face token securely (won't be printed)
+    os.environ["HUGGINGFACE_TOKEN"] = input("Enter your Hugging Face Token: ")
+
+    5.Tokenize the Data for BERT
+    from transformers import AutoTokenizer
+
+    token = os.environ["HUGGINGFACE_TOKEN"]
+    model_name = "emilyalsentzer/Bio_ClinicalBERT"
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_auth_token=token)
+
+    def tokenize_function(examples):
+        return tokenizer(examples["text"], padding="max_length", truncation=True, max_length=256)
+
+    tokenized_dataset = dataset.map(tokenize_function, batched=True)
+
+    6.Train-Test Split
+    split = tokenized_dataset.train_test_split(test_size=0.2)
+    train_dataset = split["train"]
+    eval_dataset = split["test"]
+
+    7. Load model and training setup
+    from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
+
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
+
+    training_args = TrainingArguments(
+        output_dir="./results",
+        num_train_epochs=3,
+        per_device_train_batch_size=8,
+        per_device_eval_batch_size=8,
+        evaluation_strategy="epoch",
+        save_strategy="epoch",
+        logging_dir="./logs",
+        logging_steps=10,
+        load_best_model_at_end=True,
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+        tokenizer=tokenizer
+    )
+
+    8. Start training
+    trainer.train()
+
+Evaluation Code:
+
+    1. install requirements
+
+    !pip install evaluate
+
+    2. Load evaluation metrics
+
+    import evaluate
+
+    accuracy_metric = evaluate.load("accuracy")
+    precision_metric = evaluate.load("precision")
+    recall_metric = evaluate.load("recall")
+    f1_metric = evaluate.load("f1")
+
+    3. Metric Computation Function
+
+    import numpy as np
+
+    def compute_metrics(eval_pred):
+        logits, labels = eval_pred
+        predictions = np.argmax(logits, axis=-1)
+        
+        accuracy = accuracy_metric.compute(predictions=predictions, references=labels)["accuracy"]
+        precision = precision_metric.compute(predictions=predictions, references=labels)["precision"]
+        recall = recall_metric.compute(predictions=predictions, references=labels)["recall"]
+        f1 = f1_metric.compute(predictions=predictions, references=labels)["f1"]
+        
+        return {
+            "accuracy": accuracy,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1
+        }
+
+    4. Trainer setup using evaluation metrics
+
+    from transformers import Trainer
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+        tokenizer=tokenizer,
+        compute_metrics=compute_metrics
+    )
+
+    5. Get results
+
+    metrics = trainer.evaluate()
+    print(metrics)
+
+
+
+Outputs from google collab run:
+
+1. From Training: 
+
+TrainOutput(
+    global_step=1500,
+    training_loss=0.026434476557925034, 
+    metrics={'train_runtime': 636.4788, 
+    'train_samples_per_second': 18.854, 
+    'train_steps_per_second': 2.357, 
+    'total_flos': 1578666332160000.0, 
+    'train_loss': 0.026434476557925034, 
+    'epoch': 3.0
+    })
+
+2. From evaluation
+
+{
+    'eval_loss': 2.8562370061990805e-05, 
+    'eval_model_preparation_time': 0.0055, 
+    'eval_accuracy': 1.0, 
+    'eval_precision': 1.0, 
+    'eval_recall': 1.0, 
+    'eval_f1': 1.0, 
+    'eval_runtime': 15.3929, 
+    'eval_samples_per_second': 64.965, 
+    'eval_steps_per_second': 8.121
+}
+
+
+results:
+
+eval_loss --> Very low number suggests that fine tuned model didn't error often on unseen data
+eval_accuracy --> Perfect -- Perfect accuracy likely due to dataset being small and synthetic, I will try move wrangle open source EHR dataset and finetune on this model for future work)
+eval_precision --> Perfect -- No false positives (probably due to nature of dataset)
+eval_recall --> Perfect
+eval_f1 --> Perfect -- balance between recision and recall
+eval_runtime --> time taken for evaluation
+eval_sample_per_second --> processing speed
+eval_steps_per_second --> Steps per second
+
+https://wandb.ai/pietrouberti2003-newcastle-university/huggingface/runs/jgp7lxv7/workspace
+
+
+
+Exporting the model from google Collab
+
+    1. Preparing ZiP
+        model.save_pretrained("fine-tuned-ClinicalBERT-diagnosis-verifier")
+        tokenizer.save_pretrained("fine-tuned-ClinicalBERT-diagnosis-verifier")
+
+        !zip -r fine-tuned-ClinicalBERT-diagnosis-verifier.zip fine-tuned-ClinicalBERT-diagnosis-verifier
+
+    2. downloading ZiP
+        from google.colab import files
+        files.download("fine-tuned-ClinicalBERT-diagnosis-verifier.zip")
+
+
+

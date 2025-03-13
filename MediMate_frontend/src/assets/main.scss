@@ -3,6 +3,7 @@
 @import 'frontend/hero-banner';
 @import 'frontend/login';
 @import 'frontend/doctors-office';
+@import 'frontend/alert';
 
 $primary-color:  #007bffd5;
 $secondary-color: #007bff;
@@ -68,14 +69,15 @@ body {
 .heading {
     font-size: 2rem;
     font-weight: 700;
+    color: black;
+    margin: 0;
     &__h1 {
         font-size: 4rem;
-        font-weight: 700;
+        font-weight: 600;
     }
     &__h2 {
         font-size: 3rem;
         font-weight: 600;
-        margin-bottom: 15px;
     }
     &__h3 {
         font-size: 2rem;
@@ -92,6 +94,9 @@ body {
         font-weight: 400;
         margin: 0;
         margin-bottom: 10px;
+    }
+    &--brand-colour {
+        color: $primary-color;
     }
 }
 

@@ -23,6 +23,7 @@
            @conditionSummary="handleConditionSummary"
            @conditionSummaryLoader="handleCondtionLoader"
            @clearConditionResponse="handleConditionClear"
+           @emitDiagnosisVerification="handleDiagnosisVerification"
             />
         </div>
         <div class="office__col">
@@ -69,6 +70,8 @@ const medicationLoader = ref(false)
 const encounterLoader = ref(false)
 const allergyLoader = ref(false)
 const conditionLoader = ref(false)
+
+const emit = defineEmits(['diagnosisVerification'])
 
 window.scrollTo(0, 64);
 // on page load check what theme is set and change the colours accordingly
@@ -130,6 +133,10 @@ const handleMedicationClear = () => {
 
 const handleConditionClear = () => {
     patientConditionSummary.value = {}
+}
+
+const handleDiagnosisVerification = (data) => {
+    emit('diagnosisVerification', data)
 }
 
 
