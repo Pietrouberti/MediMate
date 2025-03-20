@@ -100,7 +100,7 @@
         </div>
         <div class="office__cta">
             <button class="button button--form" @click="verifyDoctorsDiagnosis" :disabled="appointment.diagnosis == null || appointment.symptoms == null || appointment.notes == null || selectedPatient.id == null">Verify diagnosis prediction</button>
-            <button class="button button--form">Check for Prescription Clashes</button>
+            <button class="button button--form" @click="verifyPrescriptionClashes">Check for Prescription Clashes</button>
             <button class="button button--form">Download EHR Record</button>
         </div>
     </div>
@@ -125,6 +125,9 @@ const emit = defineEmits([
     'conditionSummaryLoader',
     'clearConditionResponse',
     'emitDiagnosisVerification',
+    'emitPrescriptionClash',
+    'emitPrescriptionClashLoader',
+    'emitPrescriptionClashClear'
 ])
 
 const fetchingInformation = ref(false);
@@ -219,6 +222,13 @@ const removeSelectedPatient = () => {
         ethnicity: null,
         address: null,
     }
+
+    // clear the contents of the summary tabs and prescription clash when a user deselects a patient
+    emit('clearAllergyResponse')
+    emit('clearConditionResponse')
+    emit('clearMedicationResponse')
+    emit('clearEncounterResponse')
+    emit('emitPrescriptionClashClear')
 }
 
 // hide dropdown after 200ms for smoother transition and silky UX
@@ -350,5 +360,23 @@ const verifyDoctorsDiagnosis = async() => {
     })
 }
 
-
+const verifyPrescriptionClashes = async() => {
+    fetchingInformation.value = true;
+    emit('emitPrescriptionClashLoader', true)
+    emit('emitPrescriptionClashClear')
+    await axios.post('api/llm_generation/check_ddi/', {
+        headers: {
+            'Authorization': `Bearer ${userStore.user.accessToken}`
+        },
+        'patient' : selectedPatient.value.id,
+        'prescription': appointment.value.prescription,
+    }).then((response) => {
+        console.log(response)
+        emit('emitPrescriptionClash', response.data.result)
+        emit('emitPrescriptionClashLoader', false)
+    }).catch((error) => {
+        emit('emitPrescriptionClashLoader', false)
+        console.error(error)
+    })
+}
 </script>

@@ -5,7 +5,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 import torch
 import requests
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-from dataset_uploader.vector_database_indexer import rag_entry_point
+from dataset_uploader.vector_database_indexer import rag_entry_point, get_patient_active_medication, extract_drug_names
 import torch
 import json
 from patients.models import Patients
@@ -13,6 +13,29 @@ from patients.models import Patients
 
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
 
+class MedicalPrescriptionDetector():
+    def __init__(self):
+        self.model = "A:/Dissertation/MediMate/fine_tuned_ddi_BERT1_model"
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model)
+        self.model = AutoModelForSequenceClassification.from_pretrained(self.model)
+        self.pipeline = pipeline("text-classification", model=self.model, tokenizer=self.tokenizer)
+    
+    def verify_medical_prescription(self, active_medication , prescription):
+        results = []
+        for i in active_medication:
+            input_text = (
+                f"{i} + {prescription}"
+            )
+            result = self.pipeline(input_text)
+            severity_options = {'Minor': 'LABEL_0', 'Moderate': 'LABEL_2', 'Major': 'LABEL_1', 'Unknown': 'LABEL_3'} 
+            for severity, label in severity_options.items():
+                if result[0]['label'] == label:
+                    result[0]['severity'] = severity
+                    break
+            result[0].update({'active_medication': i, 'prescription': prescription})
+            print(result)
+            results.append(result)
+        return results 
 
 # MedicalDiagnosisChecker used for querying huggingface LLM
 class MedicalDiagnosisChecker():
@@ -33,7 +56,7 @@ class MedicalDiagnosisChecker():
         print(input_text)
         
         result = self.pipeline(input_text)
-        return result  # [{'label': 'LABEL_1', 'score': 0.95}]
+        return result
         
 
 # MedicalSummaryRecordGenerator class used for querying LLM via Ollama
@@ -307,4 +330,23 @@ def check_doctors_diagnosis(request):
     except Exception as e: 
         return JsonResponse({'success': False, 'error': e})
     
+
+@api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def check_medical_prescription(request):
+    try: 
+        
+        patient_id = str(request.data['patient'])
+        prescription = str(request.data['prescription'])
+        active_medication = get_patient_active_medication(patient_id)
+        if len(active_medication) == 0:
+            return JsonResponse({'success': True, 'result': ['Patient has no active medications']})
+        else:     
+            extracted_drug_name = extract_drug_names(active_medication)
+            prescription_clash_detector = MedicalPrescriptionDetector()
+            results = prescription_clash_detector.verify_medical_prescription(extracted_drug_name, prescription)
+            return JsonResponse({'success': True, 'result': results})   
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': e})    
     

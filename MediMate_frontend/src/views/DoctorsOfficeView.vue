@@ -24,6 +24,9 @@
            @conditionSummaryLoader="handleCondtionLoader"
            @clearConditionResponse="handleConditionClear"
            @emitDiagnosisVerification="handleDiagnosisVerification"
+           @emitPrescriptionClash="handlePrescriptionClash"
+           @emitPrescriptionClashLoader="handlePrescriptionClashLoader"
+           @emitPrescriptionClashClear="handlePrescriptionClashClear"
             />
         </div>
         <div class="office__col">
@@ -37,6 +40,8 @@
             :allergyLoader="allergyLoader"
             :patientConditionSummary="patientConditionSummary"
             :conditionLoader="conditionLoader"
+            :prescriptionClash="prescriptionClashData"
+            :precriptionClashLoader="prescriptionClashLoader"
             />
         </div>
     </div> 
@@ -65,11 +70,13 @@ const patientEncounterSummary = ref({});
 const patientMedicationSummary = ref({});
 const patientAllergySummary = ref({})
 const patientConditionSummary = ref({})
+const prescriptionClashData = ref({})
 
 const medicationLoader = ref(false)
 const encounterLoader = ref(false)
 const allergyLoader = ref(false)
 const conditionLoader = ref(false)
+const prescriptionClashLoader = ref(false)
 
 const emit = defineEmits(['diagnosisVerification'])
 
@@ -137,6 +144,18 @@ const handleConditionClear = () => {
 
 const handleDiagnosisVerification = (data) => {
     emit('diagnosisVerification', data)
+}
+
+const handlePrescriptionClash = (data) => {
+    prescriptionClashData.value = data
+}
+
+const handlePrescriptionClashLoader = (bool) => {
+    prescriptionClashLoader.value = bool
+}
+
+const handlePrescriptionClashClear = () => {
+    prescriptionClashData.value = {}
 }
 
 

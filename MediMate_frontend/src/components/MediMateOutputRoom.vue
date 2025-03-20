@@ -41,6 +41,16 @@
                     <p style="font-weight: bold;">{{ item.startDate }} - {{ item.endDate }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
                 </div>
             </div>
+            <div class="office__output-contents" id="prescriptionClash">
+                <div class="office__loader" v-if="precriptionClashLoader"></div>
+                <li class="office__prescription-line-item" v-if="summaryObject.prescriptionClash.data.length != 0" v-for="item in summaryObject.prescriptionClash.data" v-bind:key="item">
+                    <font-awesome-icon class="alert__icon" v-if="item[0].severity === 'Major'" :icon="['fas', 'circle-exclamation']" style="color: #FF0000; width: 30px; height: 30px;" />
+                    <font-awesome-icon class="alert__icon" v-if="item[0].severity === 'Moderate'" :icon="['fas', 'triangle-exclamation']" style="color: #FFA500; width: 30px; height: 30px;" />
+                    <font-awesome-icon class="alert__icon" v-if="item[0].severity === 'Minor' || item[0].severity === 'Unknown' " :icon="['fas', 'exclamation']" style="color: #ADD8E6; width: 30px; height: 30px;" />
+                    <p class="heading heading__p">Medimate systems has detected a possible {{item[0].severity}} <strong>drug drug interaction</strong> between the currently prescribed {{item[0].active_medication}} and {{item[0].prescription}}. Score: {{(item[0].score * 100).toFixed(5)}}</p>
+
+                </li>
+            </div>
         </div>
     </div>
 </template>
@@ -57,7 +67,8 @@ const summaryObject = ref({
     encounterSummary: {heading: 'Appointments', data: {}},
     medicationSummary: {heading: 'Medications', data: {}},
     allergySummary: {heading: 'Allergies', data: {}},
-    conditionSummary: {heading: 'Conditions', data: {}}
+    conditionSummary: {heading: 'Conditions', data: {}},
+    prescriptionClash: {heading: 'Prescription Clashes', data: {}}
 
 })
 
@@ -94,14 +105,18 @@ const props = defineProps({
     allergyLoader: Boolean,
     patientConditionSummary: Object,
     conditionLoader: Boolean,
+    prescriptionClash: Object,
+    precriptionClashLoader: Boolean,
 })
 
-watch(() => [props.patientEncounterSummary, props.patientMedicationSummary, props.patientAllergySummary, props.patientConditionSummary],
-    ([newEncounterSummary, newMedicationSummary, newAllergySummary, newConditionSummary]) => {
+watch(() => [props.patientEncounterSummary, props.patientMedicationSummary, props.patientAllergySummary, props.patientConditionSummary, props.prescriptionClash],
+    ([newEncounterSummary, newMedicationSummary, newAllergySummary, newConditionSummary, newPrescriptionClash]) => {
         summaryObject.value.encounterSummary.data = newEncounterSummary
         summaryObject.value.medicationSummary.data = newMedicationSummary
         summaryObject.value.allergySummary.data = newAllergySummary
         summaryObject.value.conditionSummary.data = newConditionSummary
+        summaryObject.value.prescriptionClash.data = newPrescriptionClash
+        console.log(summaryObject.value)
     },
     { deep: true }
 );
@@ -120,6 +135,10 @@ watch(() => props.allergyLoader, (newVal) => {
 
 watch(() => props.conditionLoader, (newVal) => {
     toggleActiveSection('conditionSummary')
+});
+
+watch(() => props.precriptionClashLoader, (newVal) => {
+    toggleActiveSection('prescriptionClash')
 });
 
 

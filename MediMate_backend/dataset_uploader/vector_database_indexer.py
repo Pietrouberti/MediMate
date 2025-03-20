@@ -2,7 +2,7 @@ import pandas as pd
 import chromadb 
 import os
 from sentence_transformers import SentenceTransformer
-from MediMate_backend.settings import model, allergy_collection, encounter_collection, condition_collection, medication_collection, drug_interaction_collection
+# from MediMate_backend.settings import model, allergy_collection, encounter_collection, condition_collection, medication_collection, drug_interaction_collection
 
 '''
 
@@ -145,10 +145,6 @@ def patient_record_collector(patient_id, collection_obj):
      metadatas = results.get('metadatas', [])
      return metadatas
 
-def prescription_clash_record_collector(prescribed_drug, active_drug, collection_obj):
-    results = collection_obj.get(where={"$and": [{"Drug_A": prescribed_drug}, {"Drug_B": active_drug}]})
-    metadatas = results.get('metadatas', [])
-    return metadatas
 
 # will be used to search for top_k amount of similar data entries using the query text parameter
 def similar_record_context_search(query_text, collection_obj, top_k=2):
@@ -159,18 +155,32 @@ def similar_record_context_search(query_text, collection_obj, top_k=2):
         include = ["documents", "metadatas", "distances"]
     )
     return results
-    
+
+def get_patient_active_medication(patient_id):
+    results = medication_collection.get(where={"PATIENT": patient_id})
+    metadatas = results.get('metadatas', [])
+    filtered_metadatas = [md for md in metadatas if "STOP" not in md]
+    return filtered_metadatas
+
+def extract_drug_names(list_of_drugs):
+    list_of_cleaned_names = []
+    for i in list_of_drugs:
+        for a in (i['DESCRIPTION'].split('/')):
+            cleaned_name = ''.join([char for char in a if not char.isdigit()]).replace('MG', '').replace('ML','').replace('Oral', '').replace('Tablet', '').strip()
+            list_of_cleaned_names.append(cleaned_name)
+            print(cleaned_name)
+    return list_of_cleaned_names
 
 
 # Comment out the Medimate_backend inmports and uncomment code below. Run file to create vector database embeddings. Once created return code to previous state.
 
-# chroma_client = chromadb.PersistentClient(path='A:\Dissertation\MediMate\chroma_db')
-# allergy_collection = chroma_client.get_or_create_collection(name='allergy_collection')
-# condition_collection = chroma_client.get_or_create_collection(name='condition_collections')
-# encounter_collection = chroma_client.get_or_create_collection(name='encounter_collection')
-# medication_collection = chroma_client.get_or_create_collection(name='medication_collection')
-# drug_interaction_collection = chroma_client.get_or_create_collection(name='drug_drug_interaction_collection')
-# model = SentenceTransformer('all-MiniLM-L6-v2')
+chroma_client = chromadb.PersistentClient(path='A:\Dissertation\MediMate\chroma_db')
+allergy_collection = chroma_client.get_or_create_collection(name='allergy_collection')
+condition_collection = chroma_client.get_or_create_collection(name='condition_collections')
+encounter_collection = chroma_client.get_or_create_collection(name='encounter_collection')
+medication_collection = chroma_client.get_or_create_collection(name='medication_collection')
+drug_interaction_collection = chroma_client.get_or_create_collection(name='drug_drug_interaction_collection')
+model = SentenceTransformer('all-MiniLM-L6-v2')
 # load_dataset()
-
-
+k = get_patient_active_medication('34a4dcc4-35fb-6ad5-ab98-be285c586a4f')
+extract_drug_names(k)

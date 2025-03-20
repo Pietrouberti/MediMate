@@ -14,23 +14,25 @@ const height = ref(null)
 const userStore = useUserStore();
 const alertList = ref([])
 
+
+
 const removeAlertFromArray = (id) => {
   alertList.value.splice(id, 1)
 }
 
-const handleDiagnosisVerificationEmit = (payload) => {
+const handleDiagnosisVerificationEmit = (data) => {
   let dangerColour = '';
   let serverity = '';
   let message = '';
-  if (payload.label === "LABEL_1") {
+  if (data.label === "LABEL_1") {
     dangerColour = '#43bb2b';
     serverity = '';
-    message = 'MediMate System is ' + (payload.score * 100).toFixed(5) + '% confident that the diagnosis is correct';
+    message = 'MediMate System is ' + (data.score * 100).toFixed(5) + '% confident that the diagnosis is correct';
   }
   else {
     dangerColour = '#fc4040';
     serverity = '';
-    message = 'MediMate System is ' + (payload.score * 100).toFixed(5) + '% confident that the diagnosis is incorrect';
+    message = 'MediMate System is ' + (data.score * 100).toFixed(5) + '% confident that the diagnosis is incorrect';
   }
   alertList.value.push({'dangerColour': dangerColour, 'serverity': serverity, 'message': message, 'messageType': 'diagnosis_alert'})
 }
