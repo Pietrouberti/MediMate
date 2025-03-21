@@ -13,15 +13,15 @@
                 <div class="office__loader" v-if="encounterLoader"></div>
                 <p class="heading heading__p" v-if="Object.keys(summaryObject.encounterSummary.data).length != 0">{{summaryObject.encounterSummary.data.summary}}</p>
                 <p class="heading heading__p" v-if="Object.keys(summaryObject.encounterSummary.data).length == 0 && !encounterLoader">Select a patient and click `summarise past appointments`.</p>
-                <div v-if="Object.keys(summaryObject.encounterSummary.data).length != 0" v-for="item in summaryObject.encounterSummary.data.encounters" v-bind:key="item">
-                    <p style="font-weight: bold;">{{ item.date }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
+                <div v-if="Object.keys(summaryObject.encounterSummary.data).length != 0" v-for="item in summaryObject.encounterSummary.data.encounters" v-bind:key="item" style="margin-bottom: 10px;">
+                    <p style="font-weight: bold;">{{ item.startDate }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
                 </div>
             </div>
             <div class="office__output-contents" id="medicationSummary">
                 <div class="office__loader" v-if="medicationLoader"></div>
                 <p class="heading heading__p" v-if="Object.keys(summaryObject.medicationSummary.data).length != 0">{{summaryObject.medicationSummary.data.summary}}</p>
                 <p class="heading heading__p" v-if="Object.keys(summaryObject.medicationSummary.data).length == 0 && !medicationLoader">Select a patient and click `summarise past and current medication`.</p>
-                <div v-if="Object.keys(summaryObject.medicationSummary.data).length != 0" v-for="item in summaryObject.medicationSummary.data.medications" v-bind:key="item">
+                <div v-if="Object.keys(summaryObject.medicationSummary.data).length != 0" v-for="item in summaryObject.medicationSummary.data.medications" v-bind:key="item" style="margin-bottom: 10px;">
                     <p style="font-weight: bold;">{{ item.startDate }} - {{ item.endDate }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
                 </div>
             </div>
@@ -29,15 +29,15 @@
                 <div class="office__loader" v-if="allergyLoader"></div>
                 <p class="heading heading__p" v-if="Object.keys(summaryObject.allergySummary.data).length != 0">{{summaryObject.allergySummary.data.summary}}</p>
                 <p class="heading heading__p" v-if="Object.keys(summaryObject.allergySummary.data).length == 0 && !allergyLoader">Select a patient and click `summarise allergies`.</p>
-                <div v-if="Object.keys(summaryObject.allergySummary.data).length != 0" v-for="item in summaryObject.allergySummary.data.allergy" v-bind:key="item">
-                    <p style="font-weight: bold;">{{ item.date }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
+                <div v-if="Object.keys(summaryObject.allergySummary.data).length != 0" v-for="item in summaryObject.allergySummary.data.allergy" v-bind:key="item" style="margin-bottom: 10px;">
+                    <p style="font-weight: bold;">{{ item.startDate }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
                 </div>
             </div>
             <div class="office__output-contents" id="conditionSummary">
                 <div class="office__loader" v-if="conditionLoader"></div>
                 <p class="heading heading__p" v-if="Object.keys(summaryObject.conditionSummary.data).length != 0">{{summaryObject.conditionSummary.data.summary}}</p>
                 <p class="heading heading__p" v-if="Object.keys(summaryObject.conditionSummary.data).length == 0 && !conditionLoader">Select a patient and click `summarise condition`.</p>
-                <div v-if="Object.keys(summaryObject.conditionSummary.data).length != 0" v-for="item in summaryObject.conditionSummary.data.conditions" v-bind:key="item">
+                <div v-if="Object.keys(summaryObject.conditionSummary.data).length != 0" v-for="item in summaryObject.conditionSummary.data.conditions" v-bind:key="item" style="margin-bottom: 10px;">
                     <p style="font-weight: bold;">{{ item.startDate }} - {{ item.endDate }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
                 </div>
             </div>

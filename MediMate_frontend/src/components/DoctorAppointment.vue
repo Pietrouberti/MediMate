@@ -261,6 +261,7 @@ const getMedicationSummary = async() => {
         }, 3000);    
     }
     if(!useMediMateCache.value || !isPatientCached) {
+        fetchingInformation.value = true;
         await axios.get('api/llm_generation/get_summary/medication/' + selectedPatient.value.id, {
             headers: {
                 'Authorization': `Bearer ${userStore.user.accessToken}`

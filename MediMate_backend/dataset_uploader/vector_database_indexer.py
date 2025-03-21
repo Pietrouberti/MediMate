@@ -101,32 +101,23 @@ def rag_entry_point(patient_id, query_text, params):
     # get patient specific information from datasets
     if params == 'allergy':
         allergy_results = patient_record_collector(patient_id, allergy_collection)
-        patient_electronic_health_record['allergy'] = format_dataset_record(allergy_results, allergy_important_keys)
+        patient_electronic_health_record['allergy_formatted'] = format_dataset_record(allergy_results, allergy_important_keys)
+        patient_electronic_health_record['allergy_raw'] = allergy_results
         return patient_electronic_health_record
     if params == 'conditions':
         conditions_results = patient_record_collector(patient_id, condition_collection)
-        patient_electronic_health_record['conditions'] = format_dataset_record(conditions_results, conditions_important_keys)
+        patient_electronic_health_record['conditions_formatted'] = format_dataset_record(conditions_results, conditions_important_keys)
+        patient_electronic_health_record['conditions_raw'] = conditions_results
         return patient_electronic_health_record
     if params == 'medications': 
         medications_results = patient_record_collector(patient_id, medication_collection)
-        patient_electronic_health_record['medications'] = format_dataset_record(medications_results, medications_important_keys)
+        patient_electronic_health_record['medications_formatted'] = format_dataset_record(medications_results, medications_important_keys)
+        patient_electronic_health_record['medications_raw'] = medications_results
         return patient_electronic_health_record
     if params == 'encounters':
         encounters_results = patient_record_collector(patient_id, encounter_collection)
-        patient_electronic_health_record['appointments'] = format_dataset_record(encounters_results, encounters_important_keys)
-        return patient_electronic_health_record
-    else: 
-        
-        allergy_results = patient_record_collector(patient_id, allergy_collection)
-        conditions_results = patient_record_collector(patient_id, condition_collection)
-        medications_results = patient_record_collector(patient_id, medication_collection)
-        encounters_results = patient_record_collector(patient_id, encounter_collection)
-               
-        patient_electronic_health_record['allergy'] = format_dataset_record(allergy_results, allergy_important_keys)
-        patient_electronic_health_record['conditions'] = format_dataset_record(conditions_results, conditions_important_keys)
-        patient_electronic_health_record['medications'] = format_dataset_record(medications_results, medications_important_keys)
-        patient_electronic_health_record['appointments'] = format_dataset_record(encounters_results, encounters_important_keys)
-        
+        patient_electronic_health_record['appointments_formatted'] = format_dataset_record(encounters_results, encounters_important_keys)
+        patient_electronic_health_record['appointments_raw'] = encounters_results
         return patient_electronic_health_record
     
 

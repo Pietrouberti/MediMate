@@ -9,6 +9,7 @@ from dataset_uploader.vector_database_indexer import rag_entry_point, get_patien
 import torch
 import json
 from patients.models import Patients
+from datetime import datetime
 
 
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
@@ -101,6 +102,7 @@ class MedicalSummaryRecordGenerator():
         except Exception as e:
             return e
 
+    #deprecated
     # takes the LLM `json` text response and converts it into an actual json format
     def combine_summaries_as_json(self, summary_list, parentKey ,orderKey):
         json_list = []
@@ -120,7 +122,102 @@ class MedicalSummaryRecordGenerator():
         print(json.dumps(combined, indent=4))
         return combined
 
+    def format_date(self, date_str):
+        try: 
+            return datetime.strptime(date_str.split('T')[0], '%Y-%m-%d').strftime('%d/%m/%Y')
+        except Exception as e:
+            return "<not specified>"
 
+    def structure_raw_medication_data_as_json(self, raw_data):
+        result = []
+        for row in raw_data:
+            start_date = self.format_date(row.get("START", "<not specified>"))
+            end_date = self.format_date(row.get("STOP", "<not specified>"))
+            description = row.get("DESCRIPTION", "<not specified>").strip()
+            reason = row.get("REASONDESCRIPTION", "").strip()
+            dispenses = int(row.get("DISPENSES", "<not specified>"))
+            detail = f"{description} for {reason}"
+            if dispenses > 1:
+                detail += f" (Dispensed: {dispenses} times)"
+            
+            result.append({
+                "startDate": start_date,
+                "endDate": end_date,
+                "details": detail
+            })
+        return result
+    
+    def structure_raw_allergy_data_as_json(self, raw_data):
+        result = []
+        for row in raw_data:
+            start_date = self.format_date(row.get("START", "<not specified>"))
+            allergen = row.get("DESCRIPTION", "<not specified>").strip()
+            category = row.get("CATEGORY", "<not specified>").strip()
+
+            reactions = []
+            if row.get("REACTION1"):
+                desc1 = row.get("DESCRIPTION1", "").strip()
+                severity1 = row.get("SEVERITY1", "").strip()
+                reactions.append(f"{desc1} --> Severity: {severity1}" if severity1 else desc1)
+            
+            if row.get("REACTION2"):
+                desc2 = row.get("DESCRIPTION2", "").strip()
+                severity2 = row.get("SEVERITY2", "").strip()
+                reactions.append(f"{desc2} --> Severity: {severity2}" if severity2 else desc2)
+
+            detail = f"Allergy to {allergen} ({category})"
+            if reactions:
+                detail += f" | Reactions: {', '.join(reactions)}"
+
+            result.append({
+                "startDate": start_date,
+                "details": detail
+            })
+        
+        return result
+    
+    def structure_raw_appointment_data_as_json(self, raw_data):
+        result = []
+        for row in raw_data:
+            start_date = self.format_date(row.get("START", "<not specified>"))
+            description = row.get("DESCRIPTION", "<not specified>").strip()
+            reason = row.get("REASONDESCRIPTION", "").strip()
+            result.append({
+                "startDate": start_date,
+                "details": f"{description} - {reason}"
+            })
+        return result
+    
+    def structure_raw_condition_data_as_json(self, raw_data):
+        result = []
+        for row in raw_data:
+            start_date = self.format_date(row.get("START", "<not specified>"))
+            end_date = self.format_date(row.get("STOP", "<not specified>"))
+            description = row.get("DESCRIPTION", "<not specified>").strip()
+            result.append({
+                "startDate": start_date,
+                "endDate": end_date,
+                "details": description
+            })
+        return result
+
+            
+def divide_and_conquer_summarization(generator, summaries):
+    if len(summaries) == 1:
+        return summaries[0]
+    
+    merged_summaries = []
+    
+    for i in range(0, len(summaries), 2):
+        if i + 1 < len(summaries):
+            print("Divide and Conquer Summarization")
+            combined = generator.summarise_health_record(f"You are a summarization model, Please consicisely summarise these two summaries: {summaries[i]} \n {summaries[i+1]}")
+            merged_summaries.append(combined)
+        else:
+            print("ODD: Divide and Conquer Summarization")
+            merged_summaries.append(summaries[i])
+
+    return divide_and_conquer_summarization(generator, merged_summaries)
 
 # end point for patient medication summary
 @api_view(['GET'])
@@ -133,28 +230,20 @@ def get_medication_records(request, id):
         patient_id = str(id)
         patient = Patients.objects.get(id=patient_id)
         results = rag_entry_point(patient_id, '', 'medications')
-        medication_information = results.get('medications', 'No Medications')
+        medication_information = results.get('medications_formatted', 'No Medications')
+        medication_raw = results.get('medications_raw', 'No Medications')
         generator = MedicalSummaryRecordGenerator()
         chunked_info = generator.split_prompt_text(medication_information)
+        json_list_of_medication_data = generator.structure_raw_medication_data_as_json(medication_raw)
         for i in chunked_info:
+            if i == '|':
+                i = 'No Medications'
             constructed_prompt = f'''
-            Summarise **all** the patient's past and current medication in an organised manner.
+            You are a summarization model. You will be given a chunk of text that contains information about a patient's medication records.
+            You are required to summarize the information in a concise and readable manner. If no text is provided please respond with "No Medications".
 
             Medication Information: 
-            {i}
-
-            Please provide the result in the following JSON format without any additional text:
-            {{
-                "summary": "<Overall summary of the medications>",
-                "medications": [
-                    {{
-                        "startDate": "<Medication Start date in YYYY/MM/DD format>",
-                        "endDate": "<Medication End date in YYYY/MM/DD format>",
-                        "details": "<Detailed description of the medication>"
-                    }}
-                ]
-            }}
-            Ensure that the output is valid JSON. if there are no medications present return an empty list and no additional text or comments'''
+            {i} '''
             constructed_prompt_list.append(constructed_prompt)
             
         print("constructed Prompts: \n \n ", constructed_prompt_list)
@@ -162,8 +251,10 @@ def get_medication_records(request, id):
             print("generating response: ", i, " package: \n ", i)   
             summary_responses.append(generator.summarise_health_record(i))
         
-        summary = generator.combine_summaries_as_json(summary_responses, 'medications' ,'startDate')
-        summary['summary'] = generator.summarise_health_record("Without totaling number of appointments provide a clear and concise summary of " + patient.first_name + "'s appointment records: " + summary['summary'])
+        # summary = generator.combine_summaries_as_json(summary_responses, 'medications' ,'startDate')
+        summary = {"medications": json_list_of_medication_data, "summary": ""}
+        summary['summary'] = divide_and_conquer_summarization(generator, summary_responses)
+        
         return JsonResponse({'success': True, 'summary': summary, 'RAG': medication_information})
     except Exception as e:
         return JsonResponse({'error': e, 'success': False})
@@ -180,36 +271,29 @@ def get_allergy_records(request, id):
         patient_id = str(id) # converts patient id to str for vector db query
         patient = Patients.objects.get(id=patient_id)
         results = rag_entry_point(patient_id, '', 'allergy') # retrives patient information from vector db 
-        allergy_information = results.get('allergy', 'no allergies')
+        allergy_information = results.get('allergy_formatted', 'no Allergies')
+        allergy_raw = results.get('allergy_raw', 'no Allergies')
+        print(allergy_information)
         generator = MedicalSummaryRecordGenerator() # initiate the MedicalSummaryRecordGenerator class
         chunked_info = generator.split_prompt_text(allergy_information) # splits the retrived information into suitable token sizes
+        json_list_of_allergy_data = generator.structure_raw_allergy_data_as_json(allergy_raw)
+        print("ahh",allergy_information)
         for i in chunked_info: # loops through each chunk and adds it to query
-            constructed_prompt = f''' 
-            Allergy Information:
-            {i}
-            
-            Please provide the results in the following JSON format without any additional text:
-            
-            {{
-                "summary": "<Overall summary of allergies>",
-                "allergy": [
-                    {{
-                        "date": "<Allergy Start date in YYYY/MM/DD>",
-                        "details": "<Detailed description of the allergy>"
-                    }}
-                ]
-            }} 
-            Ensure that the output is valid JSON, if there are no allergies present return an empty list and no additional text or comments
-            '''
+            if i == '|':
+                i = 'No Allergens'
+            constructed_prompt = f'''
+            You are a summarization model. You will be given a chunk of text that contains information about a patient's allergen records.
+            You are required to summarize the information in a concise and readable manner. If no allergen information is provided please respond with "No Allergens".
+            Allergen Information: 
+            {i} '''
             constructed_prompt_list.append(constructed_prompt) # collects all the constructed queries 
             
         print("constructed Prompts: \n \n ", constructed_prompt_list)
         for i in constructed_prompt_list: # loops through each constructed query and requests LLM for response
             print("generating response: ", i, " package: \n ", i)   
             summary_responses.append(generator.summarise_health_record(i))
-        
-        summary = generator.combine_summaries_as_json(summary_responses, 'allergy' ,'date') # converts LLM response into JSON for frontend managment # summaries the concatenated summaries improving summary clarity 
-        summary['summary'] = generator.summarise_health_record("Without totaling number of appointments provide a clear and concise summary of " + patient.first_name + "'s appointment records: " + summary['summary'])
+        summary = {"allergy": json_list_of_allergy_data, "summary": ""}
+        summary['summary'] = divide_and_conquer_summarization(generator, summary_responses)
         return JsonResponse({'success': True, 'summary': summary, 'RAG': allergy_information})
     except Exception as e:
         return JsonResponse({'success': False, 'error': e}) # pass error to frontend if something fails
@@ -226,28 +310,20 @@ def get_encounter_records(request, id):
         patient_id = str(id)
         patient = Patients.objects.get(id=patient_id)
         results = rag_entry_point(patient_id, '', 'encounters')
-        encounter_information = results.get('appointments', 'no appointments')
+        encounter_information = results.get('appointments_formatted', 'no appointments')
+        encounter_raw = results.get('appointments_raw', 'no appointments')
         generator = MedicalSummaryRecordGenerator()
+        json_list_of_encounter_data = generator.structure_raw_appointment_data_as_json(encounter_raw)
         chunked_info = generator.split_prompt_text(encounter_information)
 
         for i in chunked_info:
-            constructed_prompt = f'''Summarise **all** the patient's past appointments and encounters in an organised manner.
-            List the encounters in descending order (most recent last).
-
-            Encounter Information: 
-            {i}
-
-            Please provide the result in the following JSON format without any additional text:
-            {{
-            "summary": "<Overall summary of the encounters>",
-            "encounters": [
-                {{
-                    "date": "<Encounter date in **YYYY/MM/DD format**>",
-                    "details": "<Detailed description of the encounter>"
-                }}
-            ]
-            }}
-            Ensure that the output is valid JSON. If there are no encounters present return an empty list and no additional text or comments'''
+            if i == '|':
+                i = 'No Appointments'
+            constructed_prompt = f'''
+                You are a summarization model. You will be given a chunk of text that contains information about a patient's appointment records.
+                You are required to summarize the information in a concise and readable manner. If no appointment information is provided please respond with "No Appointments".
+                Appointment Information: 
+                {i} '''
             
             constructed_prompt_list.append(constructed_prompt)
         
@@ -256,8 +332,9 @@ def get_encounter_records(request, id):
             print("generating response: ", i, " package: \n ", i)   
             summary_responses.append(generator.summarise_health_record(i))
         
-        summary = generator.combine_summaries_as_json(summary_responses, 'encounters' ,'date')
-        summary['summary'] = generator.summarise_health_record("Without totaling number of appointments provide a clear and concise summary of " + patient.first_name + "'s appointment records: " + summary['summary'])
+        summary = {"encounters": json_list_of_encounter_data, "summary": ""}
+        summary['summary'] = divide_and_conquer_summarization(generator, summary_responses)
+        
         return JsonResponse({'success': True, 'summary': summary, 'RAG': encounter_information})
     
     except Exception as e:
@@ -276,29 +353,19 @@ def get_condition_records(request, id):
         patient_id = str(id)
         patient = Patients.objects.get(id=patient_id)
         results = rag_entry_point(patient_id, '', 'conditions')
-        condition_information = results.get('conditions', 'no conditions')
+        condition_information = results.get('conditions_formatted', 'no conditions')
+        condition_raw = results.get('conditions_raw', 'no conditions')
         generator = MedicalSummaryRecordGenerator()
+        json_list_of_condition_data = generator.structure_raw_condition_data_as_json(condition_raw)
         chunked_info = generator.split_prompt_text(condition_information)
-        
         for i in chunked_info:
-            constructed_prompt = f'''Summarise **all** the patient's conditions in an organised manner.
-                List the conditions in descending order (most recent last).
-
-                Patient Condition Information: 
-                {i}
-
-                Please provide the result in the following JSON format without any additional text:
-                {{
-                "summary": "<Overall summary of the conditions>",
-                "conditions": [
-                    {{
-                        "startDate": "<condition Start date in YYYY/MM/DD format>",
-                        "endDate": "<condition End date in YYYY/MM/DD format>",
-                        "details": "<Detailed description of the condition>"
-                    }}
-                ]
-                }}
-                Ensure that the output is valid JSON. If there are no conditions present return an empty list and no additional text or comments'''
+            if i == '|':
+                i = 'No Conditions'
+            constructed_prompt = f'''
+                You are a summarization model. You will be given a chunk of text that contains information about a patient's conditions records.
+                You are required to summarize the information in a concise and readable manner. If no appointment information is provided please respond with "No Conditions".
+                Condition Information: 
+                {i} '''
             constructed_prompt_list.append(constructed_prompt)
         
         print("constructed Prompts: \n \n ", constructed_prompt_list)
@@ -306,8 +373,8 @@ def get_condition_records(request, id):
             print("generating response: ", i)
             summary_responses.append(generator.summarise_health_record(i))
         
-        summary = generator.combine_summaries_as_json(summary_responses, 'conditions', 'startDate')
-        summary['summary'] = generator.summarise_health_record("Without totaling number of appointments provide a clear and concise summary of " + patient.first_name + "'s appointment records: " + summary['summary'])
+        summary = {"conditions": json_list_of_condition_data, "summary": ""}
+        summary['summary'] = divide_and_conquer_summarization(generator, summary_responses)
         return JsonResponse({'success': True, 'summary': summary, 'RAG': condition_information})
     except Exception as e:
         print(e)
