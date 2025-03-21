@@ -1,6 +1,7 @@
 <template>
     <div class="office__title-container">
         <h2 class="heading heading__h3">MediMate EHR Summary</h2>
+        <p class="heading heading__p">Please always consult a qualified doctor, MediMate is prone to making mistakes</p>
     </div>
     <div class="office__output-container">
         <div class="office__output-headers">
