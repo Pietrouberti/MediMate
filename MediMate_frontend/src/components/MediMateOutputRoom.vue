@@ -43,13 +43,16 @@
             </div>
             <div class="office__output-contents" id="prescriptionClash">
                 <div class="office__loader" v-if="precriptionClashLoader"></div>
-                <li class="office__prescription-line-item" v-if="summaryObject.prescriptionClash.data.length != 0" v-for="item in summaryObject.prescriptionClash.data" v-bind:key="item">
-                    <font-awesome-icon class="alert__icon" v-if="item[0].severity === 'Major'" :icon="['fas', 'circle-exclamation']" style="color: #FF0000; width: 30px; height: 30px;" />
-                    <font-awesome-icon class="alert__icon" v-if="item[0].severity === 'Moderate'" :icon="['fas', 'triangle-exclamation']" style="color: #FFA500; width: 30px; height: 30px;" />
-                    <font-awesome-icon class="alert__icon" v-if="item[0].severity === 'Minor' || item[0].severity === 'Unknown' " :icon="['fas', 'exclamation']" style="color: #ADD8E6; width: 30px; height: 30px;" />
-                    <p class="heading heading__p">Medimate systems has detected a possible {{item[0].severity}} <strong>drug drug interaction</strong> between the currently prescribed {{item[0].active_medication}} and {{item[0].prescription}}. Score: {{(item[0].score * 100).toFixed(5)}}</p>
-
-                </li>
+                <ul class="office__prescription-list">
+                    <li class="office__prescription-line-item" v-if="summaryObject.prescriptionClash.data.length != 0" v-for="item in summaryObject.prescriptionClash.data" v-bind:key="item">
+                        <div class="office__prescription-icon-container">
+                            <font-awesome-icon class="alert__icon" v-if="item[0].severity === 'Major'" :icon="['fas', 'circle-exclamation']" style="color: #DB4437; width: 30px; height: 30px;"/>
+                            <font-awesome-icon class="alert__icon" v-if="item[0].severity === 'Moderate'" :icon="['fas', 'triangle-exclamation']" style="color: #F7BA3E; width: 30px; height: 30px;"/>
+                            <font-awesome-icon class="alert__icon" v-if="item[0].severity === 'Minor' || item[0].severity === 'Unknown' " :icon="['fas', 'exclamation']" style="color: #31BFA6; width: 30px; height: 30px;"/>    
+                        </div>
+                        <p class="heading heading__p">Medimate systems has detected a possible <span style="font-weight: bold; ">{{item[0].severity}}</span> drug drug interaction between the currently prescribed {{item[0].active_medication}} and {{item[0].prescription}}. Score: {{(item[0].score * 100).toFixed(5)}}</p>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>

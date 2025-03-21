@@ -8,6 +8,10 @@
             <input type="text" class="office__input" v-model="searchQuery" placeholder="Search for a patient" @focus="showDropdown = true" @blur="hideDropdown" />
             <p class="office__clear-patient heading heading__p" v-if="selectedPatient.id != null" @click="removeSelectedPatient()">X</p>
         </div>
+        <div class="office__filter-container">
+            <label for="checkbox">Check cache before fetch:</label>
+            <input type="checkbox" class="office__filter-checkbox" v-model="useMediMateCache"/>
+        </div>
         <ul v-if="showDropdown && filteredPatients.length" class="office__dropdown">
             <li v-for="patient in filteredPatients" :key="patient.id" @mousedown.prevent="selectPatient(patient)">
                 {{ patient.first_name }} {{ patient.last_name }}
@@ -110,6 +114,7 @@
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { useUserStore } from '@/stores/user';
+import { useMediMateOutputStore } from '@/stores/medimate-output-store';
 
 const emit = defineEmits([
     'encounterSummary', 
@@ -133,12 +138,15 @@ const emit = defineEmits([
 const fetchingInformation = ref(false);
 
 const userStore = useUserStore();
+const mediMateStore = useMediMateOutputStore();
+const useMediMateCache = ref(false);
 
 const patients = ref([])
 
 
 onMounted(async() => {
-    await getPatientList()
+    await getPatientList();
+    mediMateStore.initStore();
 });
 
 const getPatientList = async() => {
@@ -241,100 +249,153 @@ const hideDropdown = () => {
 // get a summary of patient medication
 const getMedicationSummary = async() => {
     // clear previous repsonses
-    fetchingInformation.value = true;
     emit('clearMedicationResponse')
     emit('medicationSummaryLoader', true)
     // start the loading animation
-    await axios.get('api/llm_generation/get_summary/medication/' + selectedPatient.value.id, {
-        headers: {
-            'Authorization': `Bearer ${userStore.user.accessToken}`
-        }
-    }).then((response) => {
-        if (response.data.success) {
-            fetchingInformation.value = false;
-            // emit value of the medication summary to the parent component
-            emit('medicationSummary', response.data.summary)
-            // notify parent component to stop loading animation
+    const isPatientCached = mediMateStore.doesPatientExist(selectedPatient.value.id, 'medications');
+    if(useMediMateCache.value && isPatientCached) {
+        const response = mediMateStore.fetchPatientRecord(selectedPatient.value.id, 'medications')
+        setTimeout(() => {
+            emit('medicationSummary', response.output);
+            emit('medicationSummaryLoader', false);
+        }, 3000);    
+    }
+    if(!useMediMateCache.value || !isPatientCached) {
+        await axios.get('api/llm_generation/get_summary/medication/' + selectedPatient.value.id, {
+            headers: {
+                'Authorization': `Bearer ${userStore.user.accessToken}`
+            }
+        }).then((response) => {
+            if (response.data.success) {
+                fetchingInformation.value = false;
+                console.log(response.data.summary);
+                // emit value of the medication summary to the parent component
+                mediMateStore.createMediMateSessionOutput(selectedPatient.value.id,'medications', response.data.summary);
+                emit('medicationSummary', response.data.summary)
+                // notify parent component to stop loading animation
+                emit('medicationSummaryLoader', false)
+            }
+        }).catch((error) => {
+            console.error(error)
             emit('medicationSummaryLoader', false)
-        }
-    }).catch((error) => {
-        console.error(error)
-        emit('medicationSummaryLoader', false)
-    })
+        })
+    }
 }
 
 const getAllergySummary = async() => {
     // clear previous repsonses
-    fetchingInformation.value = true;
     emit('clearAllergyResponse')
     // start loading animation to provide user feedback
     emit('allergySummaryLoader', true)
-    await axios.get('api/llm_generation/get_summary/allergy/' + selectedPatient.value.id, {
-        headers: {
-            'Authorization': `Bearer ${userStore.user.accessToken}` 
-        }
-    }).then((response) => {
-        if(response.data.success) {
-            fetchingInformation.value = false;
-            // emit summary to parent component
-            emit('allergySummary', response.data.summary);
-            // stop the loading animation
+
+    const isPatientCached = mediMateStore.doesPatientExist(selectedPatient.value.id, 'allergy')
+    if(useMediMateCache.value && isPatientCached) {
+        const response = mediMateStore.fetchPatientRecord(selectedPatient.value.id, 'allergy')
+        setTimeout(() => {
+            emit('allergySummary', response.output);
             emit('allergySummaryLoader', false);
-        }
-    }).catch((error) => {
-        console.error(error)
-        emit('allergySummaryLoader', false);
-    })
+        }, 3000);
+    }
+    if(!useMediMateCache.value || !isPatientCached) {
+        fetchingInformation.value = true;
+        await axios.get('api/llm_generation/get_summary/allergy/' + selectedPatient.value.id, {
+            headers: {
+                'Authorization': `Bearer ${userStore.user.accessToken}` 
+            }
+        }).then((response) => {
+            if(response.data.success) {
+                fetchingInformation.value = false;
+                // emit summary to parent component
+                console.log(response.data.summary);
+                mediMateStore.createMediMateSessionOutput(selectedPatient.value.id,'allergy', response.data.summary);
+                emit('allergySummary', response.data.summary);
+                // stop the loading animation
+                emit('allergySummaryLoader', false);
+            }
+        }).catch((error) => {
+            console.error(error)
+            emit('allergySummaryLoader', false);
+        })
+    }
 }
 
 
 // get a summary of patient previous encounters
 const getEncounterSummary = async() => {
-    // clear previous repsonses
-    fetchingInformation.value = true;
     emit('clearEncounterResponse')
     // start the loading animation
     emit('encounterSummaryLoader', true)
-    await axios.get('api/llm_generation/get_summary/encounters/' + selectedPatient.value.id,{
-        headers: {
-            'Authorization': `Bearer ${userStore.user.accessToken}`
-        }
-    }).then((response) => {
-        if(response.data.success) {
-            fetchingInformation.value = false;
-            // emit value to parent component
-            emit('encounterSummary', response.data.summary)
-            // stop loading animation
+    const isPatientCached = mediMateStore.doesPatientExist(selectedPatient.value.id, 'encounters')
+    // clear previous repsonses
+    console.log(isPatientCached)
+    if(useMediMateCache.value && isPatientCached) {
+        const response = mediMateStore.fetchPatientRecord(selectedPatient.value.id, 'encounters')
+        setTimeout(() => {
+            emit('encounterSummary', response.output);
+            emit('encounterSummaryLoader', false);
+        }, 3000);
+    }
+    if (!useMediMateCache.value || !isPatientCached) {
+        fetchingInformation.value = true;
+        await axios.get('api/llm_generation/get_summary/encounters/' + selectedPatient.value.id,{
+            headers: {
+                'Authorization': `Bearer ${userStore.user.accessToken}`
+            }
+        }).then((response) => {
+            if(response.data.success) {
+                fetchingInformation.value = false;
+                // emit value to parent component
+                console.log(response.data.summary);
+                mediMateStore.createMediMateSessionOutput(selectedPatient.value.id,'encounters', response.data.summary);
+                emit('encounterSummary', response.data.summary)
+                // stop loading animation
+                emit('encounterSummaryLoader', false)
+            }
+        }).catch((error) => {
+            console.error(error)
             emit('encounterSummaryLoader', false)
-        }
-    }).catch((error) => {
-        console.error(error)
-        emit('encounterSummaryLoader', false)
-    })
+        })
+    }
+
+
+
 }
 
 const getConditionSummary = async() => {
-    fetchingInformation.value = true;
     // clear previous response
     emit('clearConditionResponse')
     // start the loading animation
     emit('conditionSummaryLoader', true)
-    await axios.get('api/llm_generation/get_summary/conditions/' + selectedPatient.value.id, {
-        headers: {
-            'Authorization': `Bearer ${userStore.user.accessToken}`
-        }
-    }).then((response) => {
-        if (response.data.success) {
-            fetchingInformation.value = false;
-            // emit value to parent component
-            emit('conditionSummary', response.data.summary)
-            //stop loading animation
+    const isPatientCached = mediMateStore.doesPatientExist(selectedPatient.value.id, 'conditions')
+    if(useMediMateCache.value && isPatientCached) {
+        const response = mediMateStore.fetchPatientRecord(selectedPatient.value.id, 'conditions')
+        setTimeout(() => {
+            emit('conditionSummary', response.output);
+            emit('conditionSummaryLoader', false);
+        }, 3000);
+    }
+    if(!useMediMateCache.value || !isPatientCached) {
+        fetchingInformation.value = true;
+        await axios.get('api/llm_generation/get_summary/conditions/' + selectedPatient.value.id, {
+            headers: {
+                'Authorization': `Bearer ${userStore.user.accessToken}`
+            }
+        }).then((response) => {
+            if (response.data.success) {
+                fetchingInformation.value = false;
+                // emit value to parent component
+                console.log(response.data.summary);
+                mediMateStore.createMediMateSessionOutput(selectedPatient.value.id,'conditions', response.data.summary);
+                emit('conditionSummary', response.data.summary)
+                
+                //stop loading animation
+                emit('conditionSummaryLoader', false)
+            }
+        }).catch((error) => {
+            console.error(error)
             emit('conditionSummaryLoader', false)
-        }
-    }).catch((error) => {
-        console.error(error)
-        emit('conditionSummaryLoader', false)
-    })
+        })
+    }
 }
 
 const verifyDoctorsDiagnosis = async() => {
