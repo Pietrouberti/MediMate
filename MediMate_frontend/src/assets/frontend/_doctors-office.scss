@@ -3,8 +3,7 @@ $secondary-color: #007bff;
 .office {
     display: flex;
     flex-wrap: wrap;
-    height: auto;
-    min-height: 100vh;
+    height: fit-content;
     margin-top: 64px;
     justify-content: space-between;
     border: 2px solid $primary-color;
@@ -234,7 +233,7 @@ $secondary-color: #007bff;
     }
     &__output-container {
         width: 100%;
-        padding: 10px;
+        padding: 3px 10px 10px 10px;
         p {
             margin-left: 2px ;
         }

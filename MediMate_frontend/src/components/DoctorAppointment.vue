@@ -269,7 +269,7 @@ const getMedicationSummary = async() => {
         }).then((response) => {
             if (response.data.success) {
                 fetchingInformation.value = false;
-                console.log(response.data.summary);
+                console.log(response.data);
                 // emit value of the medication summary to the parent component
                 mediMateStore.createMediMateSessionOutput(selectedPatient.value.id,'medications', response.data.summary);
                 emit('medicationSummary', response.data.summary)
@@ -346,7 +346,7 @@ const getEncounterSummary = async() => {
             if(response.data.success) {
                 fetchingInformation.value = false;
                 // emit value to parent component
-                console.log(response.data.summary);
+                console.log(response.data);
                 mediMateStore.createMediMateSessionOutput(selectedPatient.value.id,'encounters', response.data.summary);
                 emit('encounterSummary', response.data.summary)
                 // stop loading animation
@@ -433,10 +433,12 @@ const verifyPrescriptionClashes = async() => {
         'patient' : selectedPatient.value.id,
         'prescription': appointment.value.prescription,
     }).then((response) => {
+        fetchingInformation.value = false;
         console.log(response)
         emit('emitPrescriptionClash', response.data.result)
         emit('emitPrescriptionClashLoader', false)
     }).catch((error) => {
+        fetchingInformation.value = false;
         emit('emitPrescriptionClashLoader', false)
         console.error(error)
     })

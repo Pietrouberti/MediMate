@@ -2,17 +2,7 @@ import pandas as pd
 import chromadb 
 import os
 from sentence_transformers import SentenceTransformer
-# from MediMate_backend.settings import model, allergy_collection, encounter_collection, condition_collection, medication_collection, drug_interaction_collection
-
-'''
-
-Notes to self: 
-
-Need to create helper function to effectivly wrangle the data to ensure no null values in indexable columns.
-Load in 1000 patient dataset by executing file with load_dataset() as entry point
-
-
-'''
+from MediMate_backend.settings import model, allergy_collection, encounter_collection, condition_collection, medication_collection, drug_interaction_collection
 
 # Entry point for initialisation of vector database, it loads the CSV files and executes seperate indexing functions
 def load_dataset():
@@ -101,27 +91,27 @@ def rag_entry_point(patient_id, query_text, params):
     # get patient specific information from datasets
     if params == 'allergy':
         allergy_results = patient_record_collector(patient_id, allergy_collection)
-        patient_electronic_health_record['allergy_formatted'] = format_dataset_record(allergy_results, allergy_important_keys)
-        patient_electronic_health_record['allergy_raw'] = allergy_results
+        patient_electronic_health_record['allergy_formatted'] = format_dataset_record(allergy_results, allergy_important_keys) # formats the RAG data into a more easily processbale string for LLM summarisation model
+        patient_electronic_health_record['allergy_raw'] = allergy_results # Raw RAG data objects for easy manipulation when building JSON response of specific patient data
         return patient_electronic_health_record
     if params == 'conditions':
         conditions_results = patient_record_collector(patient_id, condition_collection)
-        patient_electronic_health_record['conditions_formatted'] = format_dataset_record(conditions_results, conditions_important_keys)
-        patient_electronic_health_record['conditions_raw'] = conditions_results
+        patient_electronic_health_record['conditions_formatted'] = format_dataset_record(conditions_results, conditions_important_keys) # formats the RAG data into a more easily processbale string for LLM summarisation model
+        patient_electronic_health_record['conditions_raw'] = conditions_results # Raw RAG data objects for easy manipulation when building JSON response of specific patient data
         return patient_electronic_health_record
     if params == 'medications': 
         medications_results = patient_record_collector(patient_id, medication_collection)
-        patient_electronic_health_record['medications_formatted'] = format_dataset_record(medications_results, medications_important_keys)
-        patient_electronic_health_record['medications_raw'] = medications_results
+        patient_electronic_health_record['medications_formatted'] = format_dataset_record(medications_results, medications_important_keys) # formats the RAG data into a more easily processbale string for LLM summarisation model
+        patient_electronic_health_record['medications_raw'] = medications_results # Raw RAG data objects for easy manipulation when building JSON response of specific patient data
         return patient_electronic_health_record
     if params == 'encounters':
         encounters_results = patient_record_collector(patient_id, encounter_collection)
-        patient_electronic_health_record['appointments_formatted'] = format_dataset_record(encounters_results, encounters_important_keys)
-        patient_electronic_health_record['appointments_raw'] = encounters_results
+        patient_electronic_health_record['appointments_formatted'] = format_dataset_record(encounters_results, encounters_important_keys) # formats the RAG data into a more easily processbale string for LLM summarisation model
+        patient_electronic_health_record['appointments_raw'] = encounters_results # Raw RAG data objects for easy manipulation when building JSON response of specific patient data
         return patient_electronic_health_record
     
 
-# formats the retrived patient data by converting Python dictionary into a string and seperating entries with the | for simplified individual item extraction    
+# Formats the retrived patient data by converting Python dictionary into a string and seperating entries with the | for simplified individual item extraction    
 def format_dataset_record(retrieval_results, keys):
     formatted_records = []
     for record in retrieval_results:
@@ -130,29 +120,20 @@ def format_dataset_record(retrieval_results, keys):
     return " | ".join(formatted_records)
 
 
-# queries the vector db for specific patient data
+# Queries the vector db for specific patient data
 def patient_record_collector(patient_id, collection_obj):
      results = collection_obj.get(where={"PATIENT": patient_id})
      metadatas = results.get('metadatas', [])
      return metadatas
 
-
-# will be used to search for top_k amount of similar data entries using the query text parameter
-def similar_record_context_search(query_text, collection_obj, top_k=2):
-    query_embedding = model.encode([query_text]).tolist()
-    results = collection_obj.query(
-        query_embeddings = query_embedding,
-        n_results = top_k,
-        include = ["documents", "metadatas", "distances"]
-    )
-    return results
-
+# Fetches the active medication for a specific patient
 def get_patient_active_medication(patient_id):
     results = medication_collection.get(where={"PATIENT": patient_id})
     metadatas = results.get('metadatas', [])
     filtered_metadatas = [md for md in metadatas if "STOP" not in md]
     return filtered_metadatas
 
+# Extracts the name of drugs from the retrieved medication data preapring it for drug drug interaction model
 def extract_drug_names(list_of_drugs):
     list_of_cleaned_names = []
     for i in list_of_drugs:
@@ -165,13 +146,11 @@ def extract_drug_names(list_of_drugs):
 
 # Comment out the Medimate_backend inmports and uncomment code below. Run file to create vector database embeddings. Once created return code to previous state.
 
-chroma_client = chromadb.PersistentClient(path='A:\Dissertation\MediMate\chroma_db')
-allergy_collection = chroma_client.get_or_create_collection(name='allergy_collection')
-condition_collection = chroma_client.get_or_create_collection(name='condition_collections')
-encounter_collection = chroma_client.get_or_create_collection(name='encounter_collection')
-medication_collection = chroma_client.get_or_create_collection(name='medication_collection')
-drug_interaction_collection = chroma_client.get_or_create_collection(name='drug_drug_interaction_collection')
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# chroma_client = chromadb.PersistentClient(path='A:\Dissertation\MediMate\chroma_db')
+# allergy_collection = chroma_client.get_or_create_collection(name='allergy_collection')
+# condition_collection = chroma_client.get_or_create_collection(name='condition_collections')
+# encounter_collection = chroma_client.get_or_create_collection(name='encounter_collection')
+# medication_collection = chroma_client.get_or_create_collection(name='medication_collection')
+# drug_interaction_collection = chroma_client.get_or_create_collection(name='drug_drug_interaction_collection')
+# model = SentenceTransformer('all-MiniLM-L6-v2')
 # load_dataset()
-k = get_patient_active_medication('34a4dcc4-35fb-6ad5-ab98-be285c586a4f')
-extract_drug_names(k)
