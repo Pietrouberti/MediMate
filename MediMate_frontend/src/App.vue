@@ -20,6 +20,12 @@ const removeAlertFromArray = (id) => {
   alertList.value.splice(id, 1)
 }
 
+const handleEvaluationMetrics = (data) => {
+  let dangerColour = '#007bff'
+  alertList.value.push({'dangerColour': dangerColour, 'evaluation': data, 'messageType': 'evaluation'})
+
+}
+
 const handleDiagnosisVerificationEmit = (data) => {
   let dangerColour = '';
   let serverity = '';
@@ -70,13 +76,14 @@ watch(() => route.path, (newPath) => {
   :message="item.message" 
   :messageCount="index"
   :messageType="item.messageType"
+  :evaluation="item.evaluation"
   @deleteAlertEmit="removeAlertFromArray"
   />
   <!-- navigation bar component -->
   <NavigationBar />
   <div class="main" :style="`--overflow: ${overflow}; --height: ${height}`">
     <!-- where page contents is rendered after a url change -->
-    <RouterView @diagnosisVerification="handleDiagnosisVerificationEmit" />
+    <RouterView @diagnosisVerification="handleDiagnosisVerificationEmit" @evaluationMetrics="handleEvaluationMetrics"  />
   </div> 
 </template>
 

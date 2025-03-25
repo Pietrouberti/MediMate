@@ -10,6 +10,7 @@ export const useMediMateOutputStore = defineStore('medimate-output', {
             outputType: '',
             output: {
                 summary: '',
+                metrics: '',
             }
         },
     }),
@@ -55,6 +56,7 @@ export const useMediMateOutputStore = defineStore('medimate-output', {
             this.mediMateSessionOutput.outputType = outputType;
             this.mediMateSessionOutput.output.summary = object.summary;
             this.mediMateSessionOutput.output[outputType] = object[outputType];
+            this.mediMateSessionOutput.output.metrics = object.evaluation;
             this.updateMediMateSessionOutputs();
         }
     },

@@ -8,13 +8,89 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipe
 from dataset_uploader.vector_database_indexer import rag_entry_point, get_patient_active_medication, extract_drug_names
 import torch
 import json
-from patients.models import Patients
 from datetime import datetime
+from fuzzywuzzy import fuzz
+from sentence_transformers import SentenceTransformer, util
+from MediMate_backend.settings import model
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.util import ngrams
+from rouge_score import rouge_scorer
+from collections import Counter
+import textstat
+from bert_score import score
 
 
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
 
 
+class SummaryEvaluationMetrics():
+    def __init__(self):
+        self.stop_words = set(stopwords.words('english'))
+        
+    
+    def evaluate_summary(self, combined_summary, list_of_summaries):
+        try:
+            print("Summary Evaluation in progress")
+            conciseness_metrics = self.conciseness_metric_calculator(combined_summary, list_of_summaries)
+            coverage_metrics = self.coverage_metric_calculator(combined_summary, list_of_summaries)
+            faithfulness_metrics = self.faithfulness_metric_calculator(combined_summary, list_of_summaries)
+            redundancy_metrics = self.redundancy_metric_calculator(combined_summary)
+            fluency_metrics = self.fluency_metric_calculator(combined_summary)
+            
+            return {
+                "conciseness": conciseness_metrics,
+                "coverage": coverage_metrics,
+                "faithfulness": faithfulness_metrics,
+                "redundancy": redundancy_metrics,
+                "fluency": fluency_metrics,
+            }
+        except Exception as e:
+            print(e)
+            return {"error": str(e)}
+    
+    def conciseness_metric_calculator(self, combined_summary, list_of_summaries):
+        print("Conciseness Evaluation in progress")
+        compression_ratio = len(combined_summary) / sum([len(s) for s in list_of_summaries])
+        sentences = sent_tokenize(combined_summary)
+        avg_sentence_length = sum([len(s.split()) for s in sentences]) / len(sentences)
+        words = word_tokenize(combined_summary)
+        stopword_ratio = sum([1 for w in words if w in self.stop_words]) / len(words)
+        
+        return {
+            "compression_ratio": compression_ratio,
+            "avg_sentence_length": avg_sentence_length,
+            "stopword_ratio": stopword_ratio
+        }
+
+    def coverage_metric_calculator(self, combined_summary, list_of_summaries):
+        print("Coverage Evaluation in progress")
+        text_ref = " ".join(list_of_summaries)
+        scorer = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=True)
+        score = scorer.score(combined_summary, text_ref)
+        return score['rougeL'].recall
+    
+    def faithfulness_metric_calculator(self, combined_summary, list_of_summaries):
+        print("Faithfulness Evaluation in progress")
+        embeddings = model.encode(list_of_summaries, convert_to_tensor=True)
+        embeddings_combined = model.encode(combined_summary, convert_to_tensor=True)
+        similarity_scores = util.cos_sim(embeddings_combined, embeddings).mean().item()
+        return similarity_scores
+    
+    def redundancy_metric_calculator(self, combined_summary, n=3):
+        print("Redundancy Evaluation in progress")
+        tokens = word_tokenize(combined_summary.lower())
+        n_grams = list(ngrams(tokens, n))
+        counts = Counter(n_grams)
+        repeated = sum(1 for count in counts.values() if count > 1)
+        return repeated / len(n_grams)
+    
+    def fluency_metric_calculator(self, combined_summary):
+        print("Fluency Evaluation in progress")
+        fluency = textstat.flesch_reading_ease(combined_summary)
+        return fluency
+    
+    
 '''MedicalPrescriptionDector class: Contains finetuned BERT model for detecting drug-drug interactions in between a patients active medication and a new prescription
     verify_medical_prescription: Queries the model to determine the severity of the interaction between the active medication and the new prescription'''
 class MedicalPrescriptionDetector():
@@ -224,20 +300,27 @@ def divide_and_conquer_summarization(generator, summaries):
         if i + 1 < len(summaries):
             print(f"Divide and Conquer Summarisation for index {i} and {i+1}")
             combined = generator.summarise_health_record(
-            f"Combine and summarize the following two summaries into one concise, structured paragraph. Include all information. Output only the summary with no additional text: 1:{summaries[i]} 2:{summaries[i+1]}"
-)
+                f"""
+                Combine the following summaries into a clear, structured paragraph. 
+                Ensure all key information is captured in final summary. Avoid dense phrasing and repetition. Prioritize clarity and coverage. 
+                Output only the final summary with no additional text:
+                1. {summaries[i]}
+                2. {summaries[i+1]}"""
+            )
             merged_summaries.append(combined)
         else:
-            print(f"Adding odd summary to merged summaries index {i}")
+            print(f"Reached the end of the summary list {i}")
             merged_summaries.append(summaries[i])
 
     return divide_and_conquer_summarization(generator, merged_summaries)
+
+
 
 '''get_medication_records: end point for patient medication summary'''
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
-def get_medication_records(request, id):
+def get_medication_records(request, id, metrics):
     try: 
         summary_responses = []
         patient_id = str(id)
@@ -251,7 +334,7 @@ def get_medication_records(request, id):
             if i == '|':
                 i = 'No Medications'
             constructed_prompt = f'''
-            You are a summarization model. You will be given a chunk of text that contains information about a patient's medication records. You are required to summarize the information in a concise and readable manner. If no text is provided please respond with "No Medications" and don't include any additional text before or after summarization.
+            You are a summarization model. You will be given a chunk of text that contains information about a patient's medication records. You are required to summarize the all information in a concise and readable manner. If no text is provided please respond with "No Medications" and don't include any additional text before or after summarization.
             Medication Information: 
             {i} '''
             print(f'Generating Summary for chunk {chunked_info.index(i) + 1}/{len(chunked_info)}')
@@ -261,7 +344,12 @@ def get_medication_records(request, id):
         summary = {"medications": json_list_of_medication_data, "summary": ""}
         summary['summary'] = divide_and_conquer_summarization(generator, summary_responses)
         
-        return JsonResponse({'success': True, 'summary': summary, 'RAG': medication_information})
+        if (metrics.lower() == 'true'):
+            evaluation_metrics = SummaryEvaluationMetrics()
+            evaluation_results = evaluation_metrics.evaluate_summary(summary['summary'], summary_responses)
+            return JsonResponse({'success': True, 'summary': summary, 'RAG': medication_information, 'evaluation': evaluation_results})
+        else: 
+            return JsonResponse({'success': True, 'summary': summary, 'RAG': medication_information})
     except Exception as e:
         return JsonResponse({'error': e, 'success': False})
 
@@ -270,7 +358,7 @@ def get_medication_records(request, id):
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
-def get_allergy_records(request, id):
+def get_allergy_records(request, id, metrics):
     try:
         summary_responses = []
         patient_id = str(id) # converts patient id to str for vector db query
@@ -286,7 +374,7 @@ def get_allergy_records(request, id):
             if i == '|':
                 i = 'No Allergens'
             constructed_prompt = f'''
-            You are a summarization model. You will be given a chunk of text that contains information about a patient's allergen records. You are required to summarize the information in a concise and readable manner. If no text is provided please respond with "No Allergies" and don't include any additional text before or after summarization.            
+            You are a summarization model. You will be given a chunk of text that contains information about a patient's allergen records. You are required to summarize the all information in a concise and readable manner. If no text is provided please respond with "No Allergies" and don't include any additional text before or after summarization.            
             Allergen Information: 
             {i} '''
             print(f'Generating Summary for chunk {chunked_info.index(i) + 1}/{len(chunked_info)}')
@@ -294,7 +382,12 @@ def get_allergy_records(request, id):
             
         summary = {"allergy": json_list_of_allergy_data, "summary": ""}
         summary['summary'] = divide_and_conquer_summarization(generator, summary_responses)
-        return JsonResponse({'success': True, 'summary': summary, 'RAG': allergy_information})
+        if (metrics.lower() == 'true'):
+            evaluation_metrics = SummaryEvaluationMetrics()
+            evaluation_results = evaluation_metrics.evaluate_summary(summary['summary'], summary_responses)
+            return JsonResponse({'success': True, 'summary': summary, 'RAG': allergy_information, 'evaluation': evaluation_results})
+        else: 
+            return JsonResponse({'success': True, 'summary': summary, 'RAG': allergy_information})
     except Exception as e:
         return JsonResponse({'success': False, 'error': e}) # pass error to frontend if something fails
 
@@ -303,7 +396,7 @@ def get_allergy_records(request, id):
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
-def get_encounter_records(request, id):
+def get_encounter_records(request, id, metrics):
     try: 
         summary_responses = []
         patient_id = str(id)
@@ -318,20 +411,24 @@ def get_encounter_records(request, id):
             if i == '|':
                 i = 'No Appointments'
             constructed_prompt = f'''
-                You are a summarization model. You will be given a chunk of text that contains information about a patient's appointment records. You are required to summarize the information in a concise and readable manner. If no text is provided please respond with "No Appointments" and don't include any additional text before or after summarization.
+                You are a summarization model. You will be given a chunk of text that contains information about a patient's appointment records. You are required to summarize the all information in a concise and readable manner. If no text is provided please respond with "No Appointments" and don't include any additional text before or after summarization.
                 Appointment Information: 
                 {i} '''
             
             print(f'Generating Summary for chunk {chunked_info.index(i) + 1}/{len(chunked_info)}')
-            summary_responses.append(generator.summarise_health_record(constructed_prompt))
+            chunk_summary = generator.summarise_health_record(constructed_prompt)
+            summary_responses.append(chunk_summary)
         
         summary = {"encounters": json_list_of_encounter_data, "summary": ""}
         summary['summary'] = divide_and_conquer_summarization(generator, summary_responses)
-        
-        return JsonResponse({'success': True, 'summary': summary, 'RAG': encounter_information})
+        if (metrics.lower() == 'true'):
+            evaluation_metrics = SummaryEvaluationMetrics()
+            evaluation_results = evaluation_metrics.evaluate_summary(summary['summary'], summary_responses)
+            return JsonResponse({'success': True, 'summary': summary, 'RAG': encounter_information, 'evaluation': evaluation_results})
+        else: 
+            return JsonResponse({'success': True, 'summary': summary, 'RAG': encounter_information})
     
     except Exception as e:
-        print(e)
         return JsonResponse({'error': str(e), 'success': False})
 
 
@@ -339,7 +436,7 @@ def get_encounter_records(request, id):
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
-def get_condition_records(request, id):
+def get_condition_records(request, id, metrics):
     try:    
         summary_responses = []
         patient_id = str(id)
@@ -353,7 +450,7 @@ def get_condition_records(request, id):
             if i == '|':
                 i = 'No Conditions'
             constructed_prompt = f'''
-                You are a summarization model. You will be given a chunk of text that contains information about a patient's condition records. You are required to summarize the information in a concise and readable manner. If no text is provided please respond with "No Conditions" and don't include any additional text before or after summarization.
+                You are a summarization model. You will be given a chunk of text that contains information about a patient's condition records. You are required to summarize the all information in a concise and readable manner. If no text is provided please respond with "No Conditions" and don't include any additional text before or after summarization.
                 Condition Information: 
                 {i} '''
             print(f'Generating Summary for chunk {chunked_info.index(i) + 1}/{len(chunked_info)}')
@@ -361,7 +458,12 @@ def get_condition_records(request, id):
                 
         summary = {"conditions": json_list_of_condition_data, "summary": ""}
         summary['summary'] = divide_and_conquer_summarization(generator, summary_responses)
-        return JsonResponse({'success': True, 'summary': summary, 'RAG': condition_information})
+        if (metrics.lower() == 'true'):
+            evaluation_metrics = SummaryEvaluationMetrics()
+            evaluation_results = evaluation_metrics.evaluate_summary(summary['summary'], summary_responses)
+            return JsonResponse({'success': True, 'summary': summary, 'RAG': condition_information, 'evaluation': evaluation_results})
+        else: 
+            return JsonResponse({'success': True, 'summary': summary, 'RAG': condition_information})
     except Exception as e:
         print(e)
         return JsonResponse({'error': str(e), 'success': False})

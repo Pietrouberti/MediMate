@@ -115,9 +115,19 @@ $secondary-color: #007bff;
     &__filter-container {
         width: 100%;
         display: flex;
-        justify-content: flex-start;
+        justify-content: space-between;
         align-items: center;
         padding: 10px 10px 0px 2px;
+        gap: 5px;
+    }
+    &__filter-container-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        * {
+            margin: 0;
+            padding: 0;
+        }
         gap: 5px;
     }
     &__dropdown {

@@ -13,6 +13,11 @@ How to run project (initial run):
 6. Open two terminals and Cd into Medimate_backend and Medimate_fronted directories, in backend directory run `python manage.py runserver` and in frontend run `npm run dev` (if this     fails try `npm i` first)
 7. localhost:5173 for frontend application and localhost:8000/admin/ for backend server. You will need to create a superuser to access Django backend.
 8. changes undertaken in steps 2. and 3. should be undone after an initial run of the application.  
+9. for evaluation metrics, run python manage.py shell and copy the following commands 
+    import nltk
+    nltk.download('stopwords')
+    nltk.download('punkt')
+    nltk.download('punkt_tab')
 
 
 Post initial run:

@@ -27,6 +27,7 @@
            @emitPrescriptionClash="handlePrescriptionClash"
            @emitPrescriptionClashLoader="handlePrescriptionClashLoader"
            @emitPrescriptionClashClear="handlePrescriptionClashClear"
+           @emitEvaluationMetrics="handleEvaluationMetrics"
             />
         </div>
         <div class="office__col">
@@ -78,7 +79,7 @@ const allergyLoader = ref(false)
 const conditionLoader = ref(false)
 const prescriptionClashLoader = ref(false)
 
-const emit = defineEmits(['diagnosisVerification'])
+const emit = defineEmits(['diagnosisVerification', 'evaluationMetrics'])
 
 window.scrollTo(0, 64);
 // on page load check what theme is set and change the colours accordingly
@@ -156,6 +157,10 @@ const handlePrescriptionClashLoader = (bool) => {
 
 const handlePrescriptionClashClear = () => {
     prescriptionClashData.value = {}
+}
+
+const handleEvaluationMetrics = (data) => {
+    emit('evaluationMetrics', data)
 }
 
 

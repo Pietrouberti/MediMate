@@ -9,8 +9,15 @@
             <p class="office__clear-patient heading heading__p" v-if="selectedPatient.id != null" @click="removeSelectedPatient()">X</p>
         </div>
         <div class="office__filter-container">
-            <label for="checkbox">Check cache before fetch:</label>
-            <input type="checkbox" class="office__filter-checkbox" v-model="useMediMateCache"/>
+            <div class="office__filter-container-item">
+                <label for="checkbox">Check cache before fetch:</label>
+                <input type="checkbox" class="office__filter-checkbox" v-model="useMediMateCache"/>
+            </div>
+            <div class="office__filter-container-item">
+                <label for="checkbox">Show Evaluation Metrics:</label>
+                <input type="checkbox" class="office__filter-checkbox" v-model="showMetrics"/>
+            </div>
+            
         </div>
         <ul v-if="showDropdown && filteredPatients.length" class="office__dropdown">
             <li v-for="patient in filteredPatients" :key="patient.id" @mousedown.prevent="selectPatient(patient)">
@@ -132,7 +139,8 @@ const emit = defineEmits([
     'emitDiagnosisVerification',
     'emitPrescriptionClash',
     'emitPrescriptionClashLoader',
-    'emitPrescriptionClashClear'
+    'emitPrescriptionClashClear',
+    'emitEvaluationMetrics'
 ])
 
 const fetchingInformation = ref(false);
@@ -140,6 +148,7 @@ const fetchingInformation = ref(false);
 const userStore = useUserStore();
 const mediMateStore = useMediMateOutputStore();
 const useMediMateCache = ref(false);
+const showMetrics = ref(false);
 
 const patients = ref([])
 
@@ -246,6 +255,10 @@ const hideDropdown = () => {
     }, 200);
 };
 
+const emitSummaryEvaluationMetrics = (data) => {
+    emit('emitEvaluationMetrics', data)
+}
+
 // get a summary of patient medication
 const getMedicationSummary = async() => {
     // clear previous repsonses
@@ -258,11 +271,12 @@ const getMedicationSummary = async() => {
         setTimeout(() => {
             emit('medicationSummary', response.output);
             emit('medicationSummaryLoader', false);
+            emitSummaryEvaluationMetrics(response.output.metric)
         }, 3000);    
     }
     if(!useMediMateCache.value || !isPatientCached) {
         fetchingInformation.value = true;
-        await axios.get('api/llm_generation/get_summary/medication/' + selectedPatient.value.id, {
+        await axios.get('api/llm_generation/get_summary/medication/' + selectedPatient.value.id + '/' + showMetrics.value, {
             headers: {
                 'Authorization': `Bearer ${userStore.user.accessToken}`
             }
@@ -273,6 +287,9 @@ const getMedicationSummary = async() => {
                 // emit value of the medication summary to the parent component
                 mediMateStore.createMediMateSessionOutput(selectedPatient.value.id,'medications', response.data.summary);
                 emit('medicationSummary', response.data.summary)
+                if(showMetrics.value) {
+                    emitSummaryEvaluationMetrics(response.data.evaluation)
+                }
                 // notify parent component to stop loading animation
                 emit('medicationSummaryLoader', false)
             }
@@ -295,11 +312,12 @@ const getAllergySummary = async() => {
         setTimeout(() => {
             emit('allergySummary', response.output);
             emit('allergySummaryLoader', false);
+            emitSummaryEvaluationMetrics(response.output.metric)
         }, 3000);
     }
     if(!useMediMateCache.value || !isPatientCached) {
         fetchingInformation.value = true;
-        await axios.get('api/llm_generation/get_summary/allergy/' + selectedPatient.value.id, {
+        await axios.get('api/llm_generation/get_summary/allergy/' + selectedPatient.value.id + '/' + showMetrics.value, {
             headers: {
                 'Authorization': `Bearer ${userStore.user.accessToken}` 
             }
@@ -310,6 +328,9 @@ const getAllergySummary = async() => {
                 console.log(response.data.summary);
                 mediMateStore.createMediMateSessionOutput(selectedPatient.value.id,'allergy', response.data.summary);
                 emit('allergySummary', response.data.summary);
+                if(showMetrics.value) {
+                    emitSummaryEvaluationMetrics(response.data.evaluation)
+                }
                 // stop the loading animation
                 emit('allergySummaryLoader', false);
             }
@@ -319,7 +340,6 @@ const getAllergySummary = async() => {
         })
     }
 }
-
 
 // get a summary of patient previous encounters
 const getEncounterSummary = async() => {
@@ -334,11 +354,12 @@ const getEncounterSummary = async() => {
         setTimeout(() => {
             emit('encounterSummary', response.output);
             emit('encounterSummaryLoader', false);
+            emitSummaryEvaluationMetrics(response.output.metric)
         }, 3000);
     }
     if (!useMediMateCache.value || !isPatientCached) {
         fetchingInformation.value = true;
-        await axios.get('api/llm_generation/get_summary/encounters/' + selectedPatient.value.id,{
+        await axios.get('api/llm_generation/get_summary/encounters/' + selectedPatient.value.id + '/' + showMetrics.value,{
             headers: {
                 'Authorization': `Bearer ${userStore.user.accessToken}`
             }
@@ -349,6 +370,9 @@ const getEncounterSummary = async() => {
                 console.log(response.data);
                 mediMateStore.createMediMateSessionOutput(selectedPatient.value.id,'encounters', response.data.summary);
                 emit('encounterSummary', response.data.summary)
+                if(showMetrics.value) {
+                    emitSummaryEvaluationMetrics(response.data.evaluation)
+                }
                 // stop loading animation
                 emit('encounterSummaryLoader', false)
             }
@@ -373,11 +397,12 @@ const getConditionSummary = async() => {
         setTimeout(() => {
             emit('conditionSummary', response.output);
             emit('conditionSummaryLoader', false);
+            emitSummaryEvaluationMetrics(response.output.metric)
         }, 3000);
     }
     if(!useMediMateCache.value || !isPatientCached) {
         fetchingInformation.value = true;
-        await axios.get('api/llm_generation/get_summary/conditions/' + selectedPatient.value.id, {
+        await axios.get('api/llm_generation/get_summary/conditions/' + selectedPatient.value.id + '/' + showMetrics.value, {
             headers: {
                 'Authorization': `Bearer ${userStore.user.accessToken}`
             }
@@ -388,7 +413,9 @@ const getConditionSummary = async() => {
                 console.log(response.data.summary);
                 mediMateStore.createMediMateSessionOutput(selectedPatient.value.id,'conditions', response.data.summary);
                 emit('conditionSummary', response.data.summary)
-                
+                if(showMetrics.value) {
+                    emitSummaryEvaluationMetrics(response.data.evaluation)
+                }
                 //stop loading animation
                 emit('conditionSummaryLoader', false)
             }
