@@ -153,7 +153,9 @@ class MedicalSummaryRecordGenerator():
     def __init__(self):
         self.model = "llama3.1"
         self.max_chunk_size = 800 
-     
+    
+    # splits retrived formated patient record data into specificly size chunks of data
+    # returns a list of ready to process data chunks  
     def split_prompt_text(self, rag_info):
         items = rag_info.split('|')
         prompt_chunks = []
@@ -235,6 +237,7 @@ class MedicalSummaryRecordGenerator():
     
     def structure_raw_allergy_data_as_json(self, raw_data):
         result = []
+        print(raw_data)
         for row in raw_data:
             start_date = self.format_date(row.get("START", "<not specified>"))
             allergen = row.get("DESCRIPTION", "<not specified>").strip()
@@ -337,10 +340,10 @@ def get_medication_records(request, id, metrics):
             You are a summarization model. You will be given a chunk of text that contains information about a patient's medication records. You are required to summarize the all information in a concise and readable manner. If no text is provided please respond with "No Medications" and don't include any additional text before or after summarization.
             Medication Information: 
             {i} '''
-            print(f'Generating Summary for chunk {chunked_info.index(i) + 1}/{len(chunked_info)}')
+            if(len(chunked_info) > 1):
+                print(f'Generating Summary for chunk {chunked_info.index(i) + 1}/{len(chunked_info)}')
             summary_responses.append(generator.summarise_health_record(constructed_prompt))
             
-        # summary = generator.combine_summaries_as_json(summary_responses, 'medications' ,'startDate')
         summary = {"medications": json_list_of_medication_data, "summary": ""}
         summary['summary'] = divide_and_conquer_summarization(generator, summary_responses)
         
@@ -377,7 +380,8 @@ def get_allergy_records(request, id, metrics):
             You are a summarization model. You will be given a chunk of text that contains information about a patient's allergen records. You are required to summarize the all information in a concise and readable manner. If no text is provided please respond with "No Allergies" and don't include any additional text before or after summarization.            
             Allergen Information: 
             {i} '''
-            print(f'Generating Summary for chunk {chunked_info.index(i) + 1}/{len(chunked_info)}')
+            if(len(chunked_info) > 1):
+                print(f'Generating Summary for chunk {chunked_info.index(i) + 1}/{len(chunked_info)}')
             summary_responses.append(generator.summarise_health_record(constructed_prompt))# collects all the constructed queries 
             
         summary = {"allergy": json_list_of_allergy_data, "summary": ""}
@@ -415,7 +419,8 @@ def get_encounter_records(request, id, metrics):
                 Appointment Information: 
                 {i} '''
             
-            print(f'Generating Summary for chunk {chunked_info.index(i) + 1}/{len(chunked_info)}')
+            if(len(chunked_info) > 1):
+                print(f'Generating Summary for chunk {chunked_info.index(i) + 1}/{len(chunked_info)}')
             chunk_summary = generator.summarise_health_record(constructed_prompt)
             summary_responses.append(chunk_summary)
         
@@ -453,7 +458,8 @@ def get_condition_records(request, id, metrics):
                 You are a summarization model. You will be given a chunk of text that contains information about a patient's condition records. You are required to summarize the all information in a concise and readable manner. If no text is provided please respond with "No Conditions" and don't include any additional text before or after summarization.
                 Condition Information: 
                 {i} '''
-            print(f'Generating Summary for chunk {chunked_info.index(i) + 1}/{len(chunked_info)}')
+            if(len(chunked_info) > 1):
+                print(f'Generating Summary for chunk {chunked_info.index(i) + 1}/{len(chunked_info)}')
             summary_responses.append(generator.summarise_health_record(constructed_prompt))
                 
         summary = {"conditions": json_list_of_condition_data, "summary": ""}

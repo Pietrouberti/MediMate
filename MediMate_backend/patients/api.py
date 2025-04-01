@@ -14,11 +14,11 @@ from .serializers import PatientSerializer
 @permission_classes([IsAuthenticated])
 def get_patient_list(request):
     try: 
-        patients = Patients.objects.all();
+        patients = Patients.objects.all()[:20]
         serialised_patients = PatientSerializer(patients, many=True)
         return JsonResponse({
-            'patients' : serialised_patients.data,
-            'success':  True, 
+            'patients': serialised_patients.data,
+            'success': True, 
         })
     except Exception as e:
         return JsonResponse({'patients': None, 'success': False, 'error': str(e)})
