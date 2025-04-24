@@ -2,13 +2,12 @@ from django.http import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-import torch
+import uuid
 import requests
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-from dataset_uploader.vector_database_indexer import rag_entry_point, get_patient_active_medication, extract_drug_names
-import torch
+from dataset_uploader.vector_database_indexer import rag_entry_point, get_patient_active_medication, extract_drug_names, similar_record_context_search, index_single_record
 import json
-from datetime import datetime
+from datetime import datetime, date
 from fuzzywuzzy import fuzz
 from sentence_transformers import SentenceTransformer, util
 from MediMate_backend.settings import model
@@ -18,8 +17,10 @@ from nltk.util import ngrams
 from rouge_score import rouge_scorer
 from collections import Counter
 import textstat
-from bert_score import score
-
+from MediMate_backend.settings import allergy_collection, encounter_collection, condition_collection, medication_collection
+import pandas as pd 
+import re
+import ast
 
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
 
@@ -302,6 +303,7 @@ def divide_and_conquer_summarization(generator, summaries):
     for i in range(0, len(summaries), 2):
         if i + 1 < len(summaries):
             print(f"Divide and Conquer Summarisation for index {i} and {i+1}")
+            # Use LLM to combine the two summaries
             combined = generator.summarise_health_record(
                 f"""
                 Combine the following summaries into a clear, structured paragraph. 
@@ -510,4 +512,208 @@ def check_medical_prescription(request):
             return JsonResponse({'success': True, 'result': results})   
     except Exception as e:
         return JsonResponse({'success': False, 'error': e})    
-    
+
+def bulk_data_object_with_additional_fields(collection, data):
+    allergy_keys = ['START', 'STOP', 'PATIENT', 'ENCOUNTER', 'CODE', 'SYSTEM', 'DESCRIPTION', 'TYPE', 'CATEGORY', 'REACTION1', 'DESCRIPTION1', 'SEVERITY1', 'REACTION2', 'DESCRIPTION2', 'SEVERITY2']
+    conditions_keys = ['START', 'STOP', 'PATIENT', 'ENCOUNTER', 'SYSTEM', 'CODE', 'DESCRIPTION']
+    medications_keys = ['START', 'STOP', 'PATIENT', 'PAYER', 'ENCOUNTER', 'CODE', 'DESCRIPTION', 'BASE_COST', 'PAYER_COVERAGE', 'DISPENSES', 'TOTALCOST', 'REASONCODE', 'REASONDESCRIPTION']
+    encounters_keys = ['Id', 'START', 'STOP', 'PATIENT', 'ORGANIZATION', 'PROVIDER', 'PAYER', 'ENCOUNTERCLASS', 'CODE', 'DESCRIPTION', 'BASE_ENCOUNTER_COST', 'TOTAL_CLAIM_COST', 'PAYER_COVERAGE', 'REASONCODE', 'REASONDESCRIPTION']
+
+    if collection == 'allergy_collection':
+        keys = allergy_keys
+    elif collection == 'conditions_collection':
+        keys = conditions_keys
+    elif collection == 'medications_collection':
+        keys = medications_keys
+    elif collection == 'encounters_collection':
+        keys = encounters_keys
+    else: 
+        return {}, []
+
+    updated_data = {key: data.get(key, '') for key in keys}  # Add missing keys with empty values and remove extra keys
+    return updated_data
+
+
+def format_description_data_on_collection(collection, data):
+    if collection == 'allergy_collection':
+        description = data.get('DESCRIPTION', '') + data.get('notes', '') + data.get('diagnosis', '') + data.get('symptoms', '') 
+        encounter_description = data.get('notes', '') + data.get('diagnosis', '') + data.get('ENCOUNTERNOTES', '')
+        return {'DESCRIPTION': description, 'ENCOUNTERNOTES': encounter_description}
+
+    elif collection == 'conditions_collections':
+        description = data.get('DESCRIPTION', '') + data.get('notes', '') + data.get('diagnosis', '') + data.get('symptoms', '') 
+        encounter_description = data.get('notes', '') + data.get('diagnosis', '') + data.get('ENCOUNTERNOTES', '')
+        return {'DESCRIPTION': description, 'ENCOUNTERNOTES': encounter_description}
+
+    elif collection == 'medications_collection':
+        description = data.get('PRESCRIPTION_NAME', '') + data.get('DOSAGE', '')
+        encounter_description = data.get('ENCOUNTERNOTES', '')
+        reason_description = data.get('notes', '') + data.get('symptoms', '') + data.get('diagnosis', '')
+        return {'DESCRIPTION': description, 'ENCOUNTERNOTES': encounter_description, 'REASONDESCRIPTION': reason_description}
+
+    elif collection == 'encounters_collection':
+        description = data.get('DESCRIPTION', '') + data.get('notes') + data.get('diagnosis', '')
+        encounter_description = data.get('diagnosis', '') + data.get('notes', '') + data.get('symptoms', '')
+        return {'DESCRIPTION': description, 'REASONDESCRIPTION': encounter_description}
+
+    return {}
+
+def convert_new_record_to_dataframe(record):
+    print(record)
+    cleaned = re.sub(r'[\[\]]', '', record)
+    cleaned = "[" + cleaned + "]"
+    json_compatible_str = cleaned.replace("'", '"')
+    parsed = json.loads(json_compatible_str)
+    df = pd.DataFrame(parsed)  
+    return df
+
+@api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def create_electronic_health_record(request, id, collection_obj):
+    try:
+        patient_id = str(id)
+        body = request.data['body']
+
+        collection_map = {
+            'allergy_collection': allergy_collection,
+            'conditions_collections': condition_collection,
+            'medications_collection': medication_collection,
+            'encounters_collection': encounter_collection,
+        }
+
+        collection_object = collection_map.get(collection_obj)
+        if not collection_object:
+            return JsonResponse({'success': False, 'error': 'Invalid collection object'})
+        formatted_data_encounter = format_description_data_on_collection('encounters_collection', body)
+        formatted_data_conditional = format_description_data_on_collection(collection_obj, body)
+        similar_record_conditional = similar_record_context_search(formatted_data_conditional.get('DESCRIPTION', ''), collection_object)
+        similar_encounter_record = similar_record_context_search(formatted_data_encounter.get('REASONDESCRIPTION',''), encounter_collection)
+
+        print(formatted_data_encounter)
+        constructed_prompt = f"""
+        You are a refinement agent. Your task is to refine the values inside the following Python dictionary.
+
+        You will be given:
+        - A **Similar Record** to use solely as structural reference (do not copy content).
+        - A **Target Record** containing fields that need refining.
+
+        Requirements:
+        - Only improve the values in the fields: `'DESCRIPTION'` and `'ENCOUNTERNOTES'`.
+        - Make the `'DESCRIPTION'` medically clear and human-readable.
+        - Make the `'ENCOUNTERNOTES'` a brief, contextual summary of the situation or encounter.
+        - Do not add new fields or remove existing ones.
+
+        Your output must be the exact same Python dictionary format, with **only the updated values**. Do not include any explanations, headers, or extra content.
+
+        Similar Record:
+        {similar_record_conditional['metadatas']}
+
+        Target Record:
+        {formatted_data_conditional}
+
+        """
+        
+        constructed_prompt_encounter = f"""
+        You are a refinement agent. Your task is to refine the values inside the following Python dictionary.
+
+        You will be given:
+        - A **Similar Record** to use solely as structural reference (do not copy content).
+        - A **Target Record** containing fields that need refining.
+
+        Requirements:
+        - Only improve the values in the fields: `'DESCRIPTION'` and `'ENCOUNTERNOTES'`.
+        - Make the `'DESCRIPTION'` medically clear and human-readable.
+        - Make the `'ENCOUNTERNOTES'` a brief, contextual summary of the situation or encounter.
+        - Do not add new fields or remove existing ones.
+
+        Your output must be the exact same Python dictionary format, with **only the updated values**. Do not include any explanations, headers, or extra content.
+
+        Similar Record:
+        {similar_encounter_record['metadatas']}
+
+        Target Record:
+        {formatted_data_encounter}
+
+        """
+
+        generator = MedicalSummaryRecordGenerator()
+        new_record = generator.summarise_health_record(constructed_prompt)
+        encounter_record = generator.summarise_health_record(constructed_prompt_encounter)
+        
+        record_dict = ast.literal_eval(new_record)
+        encounter_dict = ast.literal_eval(encounter_record)
+        
+        for key, value in body.items():
+            record_dict.setdefault(key, value)
+            encounter_dict.setdefault(key, value)
+        
+        encounter_dict['ENCOUNTERCLASS'] = encounter_dict.get('encounterType', '')
+        encounter_dict['PATIENT'] = patient_id
+        encounter_dict['START'] = str(date.today().strftime('%Y-%m-%d'))
+        encounter_dict['Id'] = str(uuid.uuid4())
+        record_dict['PATIENT'] = patient_id
+        record_dict['ENCOUNTER'] = encounter_dict.get('Id', '')
+        
+        bulked_dict_record = pd.DataFrame([bulk_data_object_with_additional_fields(collection_obj, record_dict)])
+        bulked_dict_encounter_record = pd.DataFrame([bulk_data_object_with_additional_fields('encounters_collection', encounter_dict)])
+        
+        print(bulked_dict_record.head(1))
+        print(bulked_dict_encounter_record.head(1))
+        
+        if collection_obj == 'allergy_collection':
+            index_single_record(bulked_dict_record,  collection_object, collection_object.count() + 1, ['DESCRIPTION', 'TYPE', 'CATEGORY', 'REACTION1', 'DESCRIPTION1', 'REACTION2', 'DESCRIPTION2'])
+        if collection_obj == 'conditions_collections':
+            index_single_record(bulked_dict_record,  collection_object, collection_object.count() + 1, ['DESCRIPTION'])
+        if collection_obj == 'medications_collection':
+            index_single_record(bulked_dict_record,  collection_object, collection_object.count() + 1, ['DESCRIPTION', 'REASONDESCRIPTION'])
+        
+        index_single_record(bulked_dict_encounter_record,  collection_map.get('encounters_collection'), collection_map.get('encounters_collection').count() + 1, ['ENCOUNTERCLASS', 'DESCRIPTION', 'REASONDESCRIPTION'])
+        
+        return JsonResponse({
+            'success': True,
+            'encounter': bulked_dict_record,
+            'record': bulked_dict_encounter_record,
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}) 
+
+def generate_field_schemas(keys_list):
+    schema_list = []
+
+    for key in keys_list:
+        field_type = 'date' if key in ['START', 'STOP'] else 'text'
+        schema = {
+            "name": key,
+            "type": field_type,
+            "placeholder": f"Enter {key.lower()}",
+            "label": key
+        }
+        schema_list.append(schema)
+
+    return schema_list
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_vector_db_keys(request):
+    try: 
+        allergy_keys = ['START','STOP','DESCRIPTION','TYPE','CATEGORY','REACTION','SEVERITY','ENCOUNTERNOTES']
+        conditions_keys = ['START','STOP','CODE','DESCRIPTION', 'ENCOUNTERNOTES']
+        medications_keys = ['START','STOP','CODE','PRESCRIPTION_NAME','DOSAGE','BASE_COST','PAYER_COVERAGE','DISPENSES','TOTALCOST', 'ENCOUNTERNOTES']
+        encounters_keys = ['START','STOP','ENCOUNTERCLASS','DESCRIPTION','BASE_ENCOUNTER_COST','TOTAL_CLAIM_COST','PAYER_COVERAGE']
+        
+        allergy_schema = generate_field_schemas(allergy_keys)
+        conditions_schema = generate_field_schemas(conditions_keys)
+        medications_schema = generate_field_schemas(medications_keys)
+        encounters_schema = generate_field_schemas(encounters_keys)
+        
+        return JsonResponse({'success': True, 
+                             'allergy': allergy_schema, 
+                             'conditions': conditions_schema, 
+                             'medications': medications_schema, 
+                             'encounters': encounters_schema, 
+                             'encounters_class': ['wellness', 'emergency', 'ambulatory', 'inpatient', 'outpatient', 'urgentcare', 'followup']})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})

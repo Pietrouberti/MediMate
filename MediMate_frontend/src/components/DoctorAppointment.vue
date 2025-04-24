@@ -75,6 +75,18 @@
     <div class="office__appointment-notes">
         <div class="office__patient-info">
             <div class="office__grid-input-item">
+                <label for="notes">Medical Record Type</label>
+                <select class="office__notes-area office__notes-area--select" name="" id="" v-model="medicalRecordType">
+                    <option value=""></option>
+                    <option value="encounters_collection">Encounter</option>
+                    <option value="medications_collection">Medication</option>
+                    <option value="allergy_collection">Allergy</option>
+                    <option value="conditions_collections">Condition</option>
+                </select>
+            </div>
+        </div>
+        <div class="office__patient-info">
+            <div class="office__grid-input-item">
                 <label for="notes">Observations</label>
                 <textarea class="office__notes-area" name="notes" id="notes" placeholder="Appointment Notes" v-model="appointment.notes"></textarea>
             </div>
@@ -83,36 +95,29 @@
             <div class="office__grid-input-item">
                 <label for="Symptoms">Symptoms</label>
                 <input type="text" id="symptoms" class="office__grid-input" placeholder="Patient symptoms" v-model="appointment.symptoms" />
-            </div>
+            </div> 
             <div class="office__grid-input-item">
                 <label for="Diagnosis">Diagnosis</label>
                 <input type="text" id="diagnosis" class="office__grid-input" placeholder="Diagnosis prediction" v-model="appointment.diagnosis" />
             </div>
-        </div>
-        <div class="office__patient-info">
             <div class="office__grid-input-item">
-                <label for="prescription-name">Prescription Name</label>
-                <input type="text" id="prescription-name" class="office__grid-input" placeholder="Name of prescription" v-model="appointment.prescription"/>
-            </div>
-            <div class="office__grid-input-item">
-                <label for="prescription-dosage">Prescription Dosage</label>
-                <input type="text" id="prescription-dosage" class="office__grid-input" placeholder="Prescription dosage" v-model="appointment.dosage"/>
+                <label for="Diagnosis">Appointment Type</label>
+                <select type="text" id="diagnosis" class="office__grid-input" placeholder="" v-model="appointment.encounterType">
+                    <option value=""></option>
+                    <option v-for="item in encounterTypes" :key="item" :value="`${item}`">{{item}}</option>
+                </select>
             </div>
         </div>
         <div class="office__patient-info">
-            <div class="office__grid-input-item">
-                <label for="prescription-start">Prescription Start Date</label>
-                <input type="date" id="prescription-start" class="office__grid-input" v-model="appointment.prescription_start"/>
-            </div>
-            <div class="office__grid-input-item">
-                <label for="prescription-start">Prescription End Date</label>
-                <input type="date" id="prescription-start" class="office__grid-input" v-model="appointment.prescription_end"/>
+            <div class="office__grid-input-item" v-for="item in selectedMedicalRecordType" :key="item">
+                <label>{{item.label}}</label>
+                <input :type="`${item.type}`" class="office__grid-input" :placeholder="`${item.placeholder}`" v-model="appointment[item.name]"/>
             </div>
         </div>
         <div class="office__cta">
             <button class="button button--form" @click="verifyDoctorsDiagnosis" :disabled="appointment.diagnosis == null || appointment.symptoms == null || appointment.notes == null || selectedPatient.id == null">Verify diagnosis prediction</button>
             <button class="button button--form" @click="verifyPrescriptionClashes">Check for Prescription Clashes</button>
-            <button class="button button--form">Download EHR Record</button>
+            <button class="button button--form" @click="generateRecord">Generate New EHR</button>
         </div>
     </div>
 </template>
@@ -151,10 +156,16 @@ const useMediMateCache = ref(false);
 const showMetrics = ref(false);
 
 const patients = ref([])
-
+const allergyKeys = ref()
+const conditionKeys = ref()
+const encounterKeys = ref()
+const medicationKeys = ref()
+const medicalRecordType = ref('')
+const encounterTypes = ref()
 
 onMounted(async() => {
     await getPatientList();
+    await getVectorDBKeys();
     mediMateStore.initStore();
 });
 
@@ -169,6 +180,22 @@ const getPatientList = async() => {
         }
     }).catch((error) => {
         console.error(error)
+    })
+}
+
+const getVectorDBKeys = async() => {
+    await axios.get('api/llm_generation/get_vectordb_keys', {
+        headers: {
+            'Authorization': `Bearer ${userStore.user.accessToken}`
+        }
+    }).then((response) => {
+        if (response.data.success == true) {
+            allergyKeys.value = response.data.allergy
+            conditionKeys.value = response.data.conditions
+            encounterKeys.value = response.data.encounters
+            medicationKeys.value = response.data.medications
+            encounterTypes.value = response.data.encounters_class
+        }
     })
 }
 
@@ -188,10 +215,7 @@ const appointment = ref({
     notes: null,
     symptoms: null,
     diagnosis: null,
-    prescription_start: null,
-    prescription_end: null,
-    prescription: null,
-    prescription_dosage: null,
+    encounterType: null,
 })
 
 
@@ -220,6 +244,28 @@ const filteredPatients = computed(() => {
         });
 });
 
+const selectedMedicalRecordType = computed(() => {
+    appointment.value = {
+        notes: null,
+        symptoms: null,
+        diagnosis: null,
+        encounterType: null,
+    }
+
+    if (medicalRecordType.value == "allergy_collection") {
+        return allergyKeys.value
+    } 
+    if (medicalRecordType.value == "conditions_collections") {
+        return conditionKeys.value
+    }
+    if (medicalRecordType.value == "encounters_collection") {
+        return encounterKeys.value
+    }
+    if (medicalRecordType.value == "medications_collection") {
+        return medicationKeys.value
+    }
+
+})
 
 // select patient from dropdown
 const selectPatient = (patient) => {
@@ -458,7 +504,7 @@ const verifyPrescriptionClashes = async() => {
             'Authorization': `Bearer ${userStore.user.accessToken}`
         },
         'patient' : selectedPatient.value.id,
-        'prescription': appointment.value.prescription,
+        'prescription': appointment.value.PRESCRIPTION_NAME,
     }).then((response) => {
         fetchingInformation.value = false;
         console.log(response)
@@ -469,5 +515,23 @@ const verifyPrescriptionClashes = async() => {
         emit('emitPrescriptionClashLoader', false)
         console.error(error)
     })
+}
+
+const generateRecord = async() => {
+    console.log(appointment.value)
+    fetchingInformation.value = true;
+    await axios.post('api/llm_generation/create_record/'+ selectedPatient.value.id + '/' + medicalRecordType.value, {
+        headers: {
+            'Authorization': `Bearer ${userStore.user.accessToken}`
+        },
+        'body': appointment.value,
+    }).then((response) => {
+        console.log(response)
+        fetchingInformation.value = false;
+    }).error((error) => {
+        console.error(error)
+        fetchingInformation.value = false;
+    })
+    console.log(appointment.value)
 }
 </script>

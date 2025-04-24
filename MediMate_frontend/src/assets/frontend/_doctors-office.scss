@@ -190,7 +190,6 @@ $secondary-color: #007bff;
         width: 100%;
         padding: 10px;
         border: 1px solid $primary-color;
-        background-color: #007bff50;
         border-radius: 5px;
 
     }
@@ -225,6 +224,10 @@ $secondary-color: #007bff;
         border-radius: 5px;
         resize: vertical;
         height: 100px;
+        &--select {
+            height: 37px;
+        }
+        
     }
     &__cta {
         padding: 20px 10px 40px 30px;

@@ -18,6 +18,18 @@ def load_dataset():
     index_encounters_data(encounters_dataset)
     index_medications_data(medications_dataset)
 
+def index_single_record(df, collection, id, important_columns):
+    print(df)
+    df, embeddings = generate_embeddings(df, important_columns)
+
+    collection.add(
+        ids=[str(id)],
+        embeddings=[embeddings[0].tolist()],
+        documents=[df['index_text'].iloc[0]],  # FIXED: extract string
+        metadatas=[df.to_dict(orient='records')[0]]  # also make sure metadata is a dict, not Series
+    )
+
+
 # generates embeddings for vector db
 def generate_embeddings(df, embedding_columns):
     df['index_text'] = df[embedding_columns].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
@@ -143,6 +155,15 @@ def extract_drug_names(list_of_drugs):
             print(cleaned_name)
     return list_of_cleaned_names
 
+def similar_record_context_search(query_text, collection_obj, top_k=1):
+    print("query_text", query_text)
+    query_embedding = model.encode([query_text]).tolist()
+    results = collection_obj.query(
+        query_embeddings = query_embedding,
+        n_results = top_k,
+        include = ["documents", "metadatas", "distances"]
+    )
+    return results
 
 # Comment out the Medimate_backend inmports and uncomment code below. Run file to create vector database embeddings. Once created return code to previous state.
 
