@@ -26,6 +26,11 @@ const handleEvaluationMetrics = (data) => {
 
 }
 
+const handleSuccess = (data) => {
+  let dangerColour = '#43bb2b'
+  alertList.value.push({'dangerColour': dangerColour, 'message': data, 'messageType': 'diagnosis_alert'})
+}
+
 const handleDiagnosisVerificationEmit = (data) => {
   let dangerColour = '';
   let serverity = '';
@@ -83,7 +88,7 @@ watch(() => route.path, (newPath) => {
   <NavigationBar />
   <div class="main" :style="`--overflow: ${overflow}; --height: ${height}`">
     <!-- where page contents is rendered after a url change -->
-    <RouterView @diagnosisVerification="handleDiagnosisVerificationEmit" @evaluationMetrics="handleEvaluationMetrics"  />
+    <RouterView @diagnosisVerification="handleDiagnosisVerificationEmit" @evaluationMetrics="handleEvaluationMetrics" @success="handleSuccess" />
   </div> 
 </template>
 

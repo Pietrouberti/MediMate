@@ -28,6 +28,7 @@
            @emitPrescriptionClashLoader="handlePrescriptionClashLoader"
            @emitPrescriptionClashClear="handlePrescriptionClashClear"
            @emitEvaluationMetrics="handleEvaluationMetrics"
+           @success="handleSuccess"
             />
         </div>
         <div class="office__col">
@@ -79,7 +80,7 @@ const allergyLoader = ref(false)
 const conditionLoader = ref(false)
 const prescriptionClashLoader = ref(false)
 
-const emit = defineEmits(['diagnosisVerification', 'evaluationMetrics'])
+const emit = defineEmits(['diagnosisVerification', 'evaluationMetrics', 'success'])
 
 window.scrollTo(0, 64);
 // on page load check what theme is set and change the colours accordingly
@@ -163,6 +164,9 @@ const handleEvaluationMetrics = (data) => {
     emit('evaluationMetrics', data)
 }
 
+const handleSuccess = (data) => {
+    emit('success', data)
+}
 
 // helper fuction to change medichat form elements to match the theme
 const changeElementColours = (backgroundColour, colour, transition) => {

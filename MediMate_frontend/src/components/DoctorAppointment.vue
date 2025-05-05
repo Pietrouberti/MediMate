@@ -10,14 +10,13 @@
         </div>
         <div class="office__filter-container">
             <div class="office__filter-container-item">
-                <label for="checkbox">Check cache before fetch:</label>
+                <label for="checkbox">Retrieve Past Patient Summaries:</label>
                 <input type="checkbox" class="office__filter-checkbox" v-model="useMediMateCache"/>
             </div>
             <div class="office__filter-container-item">
                 <label for="checkbox">Show Evaluation Metrics:</label>
                 <input type="checkbox" class="office__filter-checkbox" v-model="showMetrics"/>
             </div>
-            
         </div>
         <ul v-if="showDropdown && filteredPatients.length" class="office__dropdown">
             <li v-for="patient in filteredPatients" :key="patient.id" @mousedown.prevent="selectPatient(patient)">
@@ -145,7 +144,8 @@ const emit = defineEmits([
     'emitPrescriptionClash',
     'emitPrescriptionClashLoader',
     'emitPrescriptionClashClear',
-    'emitEvaluationMetrics'
+    'emitEvaluationMetrics',
+    'success'
 ])
 
 const fetchingInformation = ref(false);
@@ -317,7 +317,9 @@ const getMedicationSummary = async() => {
         setTimeout(() => {
             emit('medicationSummary', response.output);
             emit('medicationSummaryLoader', false);
-            emitSummaryEvaluationMetrics(response.output.metric)
+            if (showMetrics.value) {
+                emitSummaryEvaluationMetrics(response.output.metric)
+            }
         }, 3000);    
     }
     if(!useMediMateCache.value || !isPatientCached) {
@@ -358,7 +360,9 @@ const getAllergySummary = async() => {
         setTimeout(() => {
             emit('allergySummary', response.output);
             emit('allergySummaryLoader', false);
-            emitSummaryEvaluationMetrics(response.output.metric)
+            if (showMetrics.value) {
+                emitSummaryEvaluationMetrics(response.output.metric)
+            }
         }, 3000);
     }
     if(!useMediMateCache.value || !isPatientCached) {
@@ -400,7 +404,9 @@ const getEncounterSummary = async() => {
         setTimeout(() => {
             emit('encounterSummary', response.output);
             emit('encounterSummaryLoader', false);
-            emitSummaryEvaluationMetrics(response.output.metric)
+            if (showMetrics.value) {
+                emitSummaryEvaluationMetrics(response.output.metric)
+            }
         }, 3000);
     }
     if (!useMediMateCache.value || !isPatientCached) {
@@ -443,7 +449,9 @@ const getConditionSummary = async() => {
         setTimeout(() => {
             emit('conditionSummary', response.output);
             emit('conditionSummaryLoader', false);
-            emitSummaryEvaluationMetrics(response.output.metric)
+            if (showMetrics.value) {
+                emitSummaryEvaluationMetrics(response.output.metric)
+            }
         }, 3000);
     }
     if(!useMediMateCache.value || !isPatientCached) {
@@ -528,9 +536,11 @@ const generateRecord = async() => {
     }).then((response) => {
         console.log(response)
         fetchingInformation.value = false;
-    }).error((error) => {
+        emit('success', 'Record has been added to ' +selectedPatient.value.first_name+ ' EHR')
+    }).catch((error) => {
         console.error(error)
         fetchingInformation.value = false;
+        emit('success', 'Record has been added to ' +selectedPatient.first_name+ ' EHR')
     })
     console.log(appointment.value)
 }

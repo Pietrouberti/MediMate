@@ -306,7 +306,7 @@ def divide_and_conquer_summarization(generator, summaries):
             # Use LLM to combine the two summaries
             combined = generator.summarise_health_record(
                 f"""
-                Combine the following summaries into a clear, structured paragraph. 
+                Combine the following summaries into a clear, structured paragraph with no listing or events. 
                 Ensure all key information is captured in final summary. Avoid dense phrasing and repetition. Prioritize clarity and coverage. 
                 Output only the final summary with no additional text:
                 1. {summaries[i]}
@@ -339,7 +339,7 @@ def get_medication_records(request, id, metrics):
             if i == '|':
                 i = 'No Medications'
             constructed_prompt = f'''
-            You are a summarization model. You will be given a chunk of text that contains information about a patient's medication records. You are required to summarize the all information in a concise and readable manner. If no text is provided please respond with "No Medications" and don't include any additional text before or after summarization.
+            You are a summarization model. You will be given a chunk of text that contains information about a patient's medication records. You are required to summarize the all information in a concise and readable manner with no markup (*). If no text is provided please respond with "No Medications" and don't include any additional text before or after summarization.
             Medication Information: 
             {i} '''
             if(len(chunked_info) > 1):
@@ -637,6 +637,8 @@ def create_electronic_health_record(request, id, collection_obj):
 
         """
 
+        print('Encounter Record:', formatted_data_encounter, '\n\n\ Similar Record:', similar_encounter_record['metadatas'])   
+        print('Conditional Record:', formatted_data_conditional, '\n\n\ Similar Record:', similar_record_conditional['metadatas']) 
         generator = MedicalSummaryRecordGenerator()
         new_record = generator.summarise_health_record(constructed_prompt)
         encounter_record = generator.summarise_health_record(constructed_prompt_encounter)
@@ -644,9 +646,14 @@ def create_electronic_health_record(request, id, collection_obj):
         record_dict = ast.literal_eval(new_record)
         encounter_dict = ast.literal_eval(encounter_record)
         
+        
         for key, value in body.items():
             record_dict.setdefault(key, value)
             encounter_dict.setdefault(key, value)
+            
+        print('\n Post Encounter Record:', encounter_dict)
+        print('\n Post Conditional Record:', record_dict)
+        
         
         encounter_dict['ENCOUNTERCLASS'] = encounter_dict.get('encounterType', '')
         encounter_dict['PATIENT'] = patient_id

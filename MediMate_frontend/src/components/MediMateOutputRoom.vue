@@ -12,7 +12,7 @@
         <div class="office__output-inner-container">
             <div class="office__output-contents" id="encounterSummary">
                 <div class="office__loader" v-if="encounterLoader"></div>
-                <p class="heading heading__p" v-if="Object.keys(summaryObject.encounterSummary.data).length != 0">{{summaryObject.encounterSummary.data.summary}}</p>
+                <p class="heading heading__p" v-if="Object.keys(summaryObject.encounterSummary.data).length != 0" v-html="summaryObject.encounterSummary.data.summary"></p>
                 <p class="heading heading__p" v-if="Object.keys(summaryObject.encounterSummary.data).length == 0 && !encounterLoader">Select a patient and click `summarise past appointments`.</p>
                 <div v-if="Object.keys(summaryObject.encounterSummary.data).length != 0" v-for="item in summaryObject.encounterSummary.data.encounters" v-bind:key="item" style="margin-bottom: 10px;">
                     <p style="font-weight: bold;">{{ item.startDate }} <span style="font-weight: normal;">{{ item.details }}</span></p> 
